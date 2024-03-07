@@ -90,6 +90,7 @@ public class CBMCentralManagerNative: CBMCentralManager {
             manager.delegate?.centralManager(manager,
                                              didDisconnectPeripheral: getPeripheral(peripheral),
                                              error: error)
+            removePeripheral(peripheral)
         }
         
         #if !os(macOS)
@@ -121,6 +122,10 @@ public class CBMCentralManagerNative: CBMCentralManager {
             manager.peripherals[peripheral.identifier] = p
             return p
         }
+
+        private func removePeripheral(_ peripheral: CBPeripheral) {
+            manager.peripherals[peripheral.identifier] = nil
+        }
     }
     
     private class CBMCentralManagerDelegateWrapperWithRestoration: CBMCentralManagerDelegateWrapper {
@@ -131,7 +136,15 @@ public class CBMCentralManagerNative: CBMCentralManager {
         
         func centralManager(_ central: CBCentralManager,
                             willRestoreState dict: [String : Any]) {
-            manager.delegate?.centralManager(manager, willRestoreState: dict)
+            var state = dict
+            
+            if let peripherals = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral] {
+                state[CBMCentralManagerRestoredStatePeripheralsKey] = peripherals.map {
+                    CBMPeripheralNative($0)
+                }
+            }
+                        
+            manager.delegate?.centralManager(manager, willRestoreState: state)
         }
     }
     
@@ -405,7 +418,7 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
             impl.delegate?.peripheral(impl, didOpen: channel, error: error)
         }
         
-        /// Updates the local list of serivces with received ones.
+        /// Updates the local list of services with received ones.
         /// - Parameter services: New list of services.
         private func smartCopy(_ services: [CBService]?) {
             guard let services = services else {
