@@ -99,8 +99,6 @@ class FailedConnectionTest: XCTestCase {
         wait(for: [connected], timeout: 3)
         Sim.dispose(connectionObserver)
 
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let navigationController = appDelegate.window!.rootViewController as! UINavigationController
         returnToScanner()
     }
 }
