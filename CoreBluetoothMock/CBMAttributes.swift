@@ -41,7 +41,7 @@ import CoreBluetooth
 open class CBMAttribute: NSObject {
     
     /// The Bluetooth-specific UUID of the attribute.
-    var uuid: CBMUUID {
+    open var uuid: CBMUUID {
         fatalError()
     }
 }
