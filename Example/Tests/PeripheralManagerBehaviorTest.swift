@@ -121,7 +121,10 @@ class PeripheralManagerBehaviorTest: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        CBMCentralManagerMock.tearDownSimulation()
+        // Do not call CBMCentralManagerMock.tearDownSimulation(): it would invalidate
+        // the central manager of the example app, which is shared by all tests.
+        CBMCentralManagerMock.simulatePowerOff()
+        CBMPeripheralManagerMock.tearDown()
         if #available(iOS 13.0, *) {
             CBMCentralManagerMock.simulateAuthorization(.allowedAlways)
         }

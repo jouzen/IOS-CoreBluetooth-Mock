@@ -52,7 +52,7 @@ class NormalBehaviorTest: XCTestCase {
         // That would invalidate the BlinkyManager in ScannerTableViewController.
         // The central manager must be reused, so let's just power mock off,
         // which will allow us to set different set of peripherals in another test.
-        CBMCentralManagerMock.simulatePowerOff()
+        powerOffAndSettle()
     }
 
     func testScanningBlinky() {
@@ -148,7 +148,7 @@ class NormalBehaviorTest: XCTestCase {
         wait(for: [disconnection], timeout: 1)
         Sim.dispose(disconnectionObserver)
 
-        navigationController.popViewController(animated: true)
+        returnToScanner()
     }
 
 }
