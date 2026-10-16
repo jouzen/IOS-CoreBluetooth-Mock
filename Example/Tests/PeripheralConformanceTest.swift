@@ -47,6 +47,12 @@ import XCTest
 /// unsubscribe, write `done`, disconnect.
 ///
 /// Only behavior common to both is asserted. All events are printed with the `PCONF:` prefix.
+///
+/// - Note: The native run was not completed yet. On the iPhone 13 (iOS 26.6) used to develop
+///         this test, neither this test nor a plain `CBPeripheralManager` advertisement was
+///         visible to other devices (a Mac, and a separate scanner), so the central could not
+///         connect. The script, the expected events and the Mac tool are ready for another try
+///         on a different device.
 class PeripheralConformanceTest: XCTestCase {
     static let serviceUUID = CBMUUID(string: "A0000001-0000-4000-8000-00805F9B34FB")
     static let readUUID = CBMUUID(string: "A0000002-0000-4000-8000-00805F9B34FB")
