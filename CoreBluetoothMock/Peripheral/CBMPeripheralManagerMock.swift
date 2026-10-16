@@ -173,7 +173,9 @@ open class CBMPeripheralManagerMock: CBMPeripheralManager {
         }
 
         let alreadyAdvertising: Bool = mutex.sync {
-            guard !advertising else {
+            // The advertisement data is set as soon as advertising is requested,
+            // while `advertising` is set when the delegate is notified.
+            guard !advertising && self.advertisementData == nil else {
                 return true
             }
             self.advertisementData = data
@@ -416,7 +418,7 @@ extension CBMPeripheralManagerMock {
                 manager.delegate?.peripheralManagerDidUpdateState(manager)
             }
         }
-        if CBMCentralManagerMock.managerState != .poweredOn {
+        if CBMCentralManagerMock.managerState != .poweredOn || !CBMCentralManagerMock.isAuthorized {
             disconnectAllCentrals()
         }
         mutex.sync {
@@ -553,10 +555,11 @@ extension CBMPeripheralManagerMock {
                                         characteristic: characteristic,
                                         offset: offset,
                                         value: nil) { request, result in
-            if result == .success {
+            switch result {
+            case .success:
                 reply(.success(request.value ?? Data()))
-            } else {
-                reply(.failure(CBMATTError(result)))
+            case .failure(let error):
+                reply(.failure(error))
             }
         }
         queue.asyncAfter(deadline: .now() + interval) { [weak self] in
@@ -625,11 +628,7 @@ extension CBMPeripheralManagerMock {
                                         offset: offset,
                                         value: data,
                                         completion: isWithResponse ? { _, result in
-            if result == .success {
-                reply(.success(()))
-            } else {
-                reply(.failure(CBMATTError(result)))
-            }
+            reply(result)
         } : nil)
         queue.asyncAfter(deadline: .now() + interval) { [weak self] in
             guard let self = self, self.state == .poweredOn, spec.isConnected,
@@ -713,17 +712,20 @@ extension CBMPeripheralManagerMock {
 
     /// This method is called when the Bluetooth adapter is turned off.
     private func reset() {
-        mutex.sync {
+        let abortedRequests: [CBMATTRequestMock] = mutex.sync {
             advertising = false
             advertisementData = nil
             services.forEach { unsubscribeAllCentrals(from: $0) }
             services.removeAll()
-            pendingRequests.removeAll()
             centrals.removeAll()
             pendingUpdates = 0
             readyNotificationPending = false
+            defer { pendingRequests.removeAll() }
+            return pendingRequests
         }
         isAdvertising = false
+        // Requests that were not responded to fail, as the connection is lost.
+        abortedRequests.forEach { $0.abort(CBMError(.notConnected)) }
     }
 
     /// Must be called on the ``mutex``.
@@ -767,11 +769,13 @@ extension CBMPeripheralManagerMock {
             guard let self = self else {
                 return
             }
+            var abortedRequests: [CBMATTRequestMock] = []
             let disconnected: (central: CBMCentralMock,
                                characteristics: [CBMMutableCharacteristic])? = self.mutex.sync {
                 guard let central = self.centrals.removeValue(forKey: spec.identifier) else {
                     return nil
                 }
+                abortedRequests = self.pendingRequests.filter { $0.central.identifier == spec.identifier }
                 self.pendingRequests.removeAll { $0.central.identifier == spec.identifier }
                 let characteristics = self.services
                     .flatMap { $0.characteristics ?? [] }
@@ -784,6 +788,8 @@ extension CBMPeripheralManagerMock {
                 }
                 return (central, characteristics)
             }
+            // Requests that were not responded to fail, as the connection is lost.
+            abortedRequests.forEach { $0.abort(CBMError(.notConnected)) }
             guard let result = disconnected, self.state == .poweredOn else {
                 return
             }

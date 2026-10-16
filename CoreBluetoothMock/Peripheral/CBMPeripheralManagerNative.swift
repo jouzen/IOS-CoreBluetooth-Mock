@@ -44,6 +44,9 @@ public class CBMPeripheralManagerNative: CBMPeripheralManager {
         CBMManagerState(rawValue: manager.state.rawValue) ?? .unknown
     }
     
+    // The value is read from the native manager. The setter is intentionally empty:
+    // it is called from the KVO observer below, only to make the observers of this
+    // property get notified when the native value changes.
     public override var isAdvertising: Bool {
         get {
             manager.isAdvertising
@@ -149,8 +152,8 @@ public class CBMPeripheralManagerNative: CBMPeripheralManager {
   
 extension CBMPeripheralManagerNative {
     private func addManagerObserver() {
-      observation = observe(\.manager?.isAdvertising, options: [.old, .new]) { _, change in
-        change.newValue?.flatMap { [weak self] new in
+      observation = observe(\.manager?.isAdvertising, options: [.new]) { [weak self] _, change in
+        if let new = change.newValue ?? nil {
           self?.isAdvertising = new
         }
       }

@@ -119,14 +119,15 @@ public class CBMATTRequestMock: CBMATTRequest {
     private let _characteristic: CBMCharacteristic
     private let _offset: Int
     private var _value: Data?
-    /// The closure called when the peripheral manager responds to the request.
-    private let completion: ((CBMATTRequestMock, CBMATTError.Code) -> Void)?
+    /// The closure called when the peripheral manager responds to the request,
+    /// or when the request was aborted, for example because the central disconnected.
+    private let completion: ((CBMATTRequestMock, Result<Void, Error>) -> Void)?
 
     internal init(central: CBMCentral,
                   characteristic: CBMCharacteristic,
                   offset: Int,
                   value: Data?,
-                  completion: ((CBMATTRequestMock, CBMATTError.Code) -> Void)?) {
+                  completion: ((CBMATTRequestMock, Result<Void, Error>) -> Void)?) {
         self._central = central
         self._characteristic = characteristic
         self._offset = offset
@@ -153,7 +154,12 @@ public class CBMATTRequestMock: CBMATTRequest {
 
     /// Completes the request with the given result.
     internal func respond(_ result: CBMATTError.Code) {
-        completion?(self, result)
+        completion?(self, result == .success ? .success(()) : .failure(CBMATTError(result)))
+    }
+
+    /// Completes the request with an error, when it can no longer be responded to.
+    internal func abort(_ error: Error) {
+        completion?(self, .failure(error))
     }
 
     public override var debugDescription: String {
