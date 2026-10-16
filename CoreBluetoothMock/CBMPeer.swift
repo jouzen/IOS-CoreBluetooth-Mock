@@ -10,11 +10,11 @@ import Foundation
 /// (by creating an instance of `CBPeripheralManager`), and interacts through the manager with remote devices in
 /// the opposite role. During the process of peer discovery, where a central device scans for peripherals advertising services,
 /// the system creates objects from the concrete subclasses of `CBMPeer` to represent discovered remote devices.
-/// The concrete subclasses of `CBPeer` are ``CBMPeripheral`` and `CBCentral`.
+/// The concrete subclasses of `CBPeer` are ``CBMPeripheral`` and ``CBMCentral``.
 open class CBMPeer: NSObject {
-    
+
     /// The UUID associated with the peer.
-    var identifier: UUID {
+    open var identifier: UUID {
         fatalError()
     }
 }

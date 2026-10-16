@@ -258,7 +258,7 @@ open class CBMCharacteristic: CBMAttribute {
     }
     
     /// The properties of the characteristic.
-    public let properties: CBMCharacteristicProperties
+    open internal(set) var properties: CBMCharacteristicProperties
 
     /// The value of the characteristic.
     open internal(set) var value: Data?
