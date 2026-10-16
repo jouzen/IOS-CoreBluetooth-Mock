@@ -72,12 +72,17 @@ open class CBMCentralManagerMock: CBMCentralManager {
     internal private(set) static var rssiDeviation: CBMProximity.Deviation = .default
     
     /// The global state of the Bluetooth adapter on the device.
-    fileprivate private(set) static var managerState: CBMManagerState = .poweredOff {
+    ///
+    /// The state is shared between ``CBMCentralManagerMock`` and ``CBMPeripheralManagerMock``
+    /// instances, as both use the same Bluetooth adapter.
+    internal private(set) static var managerState: CBMManagerState = .poweredOff {
         didSet {
             notifyManagers()
         }
     }
     private static func notifyManagers() {
+        // Peripheral managers share the same Bluetooth adapter.
+        CBMPeripheralManagerMock.notifyManagers()
         // For all existing managers...
         let existingManagers = mutex.sync {
             managers.compactMap { $0.ref }
@@ -271,7 +276,7 @@ open class CBMCentralManagerMock: CBMCentralManager {
     /// If `simulateAuthorization(:)` was not called it is assumed that the
     /// authorization was granted. However, in this case `CBMCentralManager.authorization`
     /// will return the value returned by the native API.
-    private static var isAuthorized: Bool {
+    internal static var isAuthorized: Bool {
         return bluetoothAuthorization == nil || bluetoothAuthorization == 3 // CBManagerAuthorization.allowedAlways
     }
     private var scanFilter: [CBMUUID]?
@@ -371,8 +376,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
         previewPeripherals.insert(peripheral)
     }
     
-    /// Removes all active central manager instances and peripherals from the
-    /// simulation, resetting it to the initial state.
+    /// Removes all active central and peripheral manager instances, peripherals
+    /// and centrals from the simulation, resetting it to the initial state.
     ///
     /// Use this to tear down your mocks between tests, e.g. in `tearDownWithError()`.
     /// All manager delegates will receive a ``CBMManagerState/unknown`` state update.
@@ -385,6 +390,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
         mutex.sync {
             managers.removeAll()
         }
+        // Remove all peripheral manager instances and disconnect mock centrals.
+        CBMPeripheralManagerMock.tearDown()
         // Set the manager state to powered Off.
         managerState = .poweredOff
         // Reset the RSSI deviation to the default
@@ -426,11 +433,11 @@ open class CBMCentralManagerMock: CBMCentralManager {
     public static var simulateFeaturesSupport: ((_ features: CBMCentralManager.Feature) -> Bool)?
     #endif
     
-    /// Sets the initial state of the Bluetooth central manager.
+    /// Sets the initial state of the Bluetooth adapter.
     ///
-    /// This method should only be called ones, before any central manager
-    /// is created. By default, the initial state is ``CBMManagerState/poweredOff``.
-    /// - Parameter state: The initial state of the central manager.
+    /// This method should only be called ones, before any central or peripheral
+    /// manager is created. By default, the initial state is ``CBMManagerState/poweredOff``.
+    /// - Parameter state: The initial state of the central and peripheral managers.
     public static func simulateInitialState(_ state: CBMManagerState) {
         managerState = state
     }
@@ -456,6 +463,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
     }
     
     /// Simulates turning the Bluetooth adapter on.
+    ///
+    /// All central and peripheral managers will be notified about the state change.
     public static func simulatePowerOn() {
         guard managerState != .poweredOn else {
             return
@@ -464,6 +473,9 @@ open class CBMCentralManagerMock: CBMCentralManager {
     }
     
     /// Simulate turning the Bluetooth adapter off.
+    ///
+    /// All central and peripheral managers will be notified about the state change.
+    /// Scanning, advertising and all connections will be terminated.
     public static func simulatePowerOff() {
         guard managerState != .poweredOff else {
             return
@@ -1673,10 +1685,10 @@ open class CBMCentralManagerMock: CBMCentralManager {
 
 // MARK: - Helpers
 
-private class WeakRef<T: AnyObject> {
-    fileprivate private(set) weak var ref: T?
-    
-    fileprivate init(_ value: T) {
+internal class WeakRef<T: AnyObject> {
+    internal private(set) weak var ref: T?
+
+    internal init(_ value: T) {
         self.ref = value
     }
 }

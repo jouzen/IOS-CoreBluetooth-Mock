@@ -38,6 +38,7 @@
 		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
 		CAEB6BB3B003B5EF5ADC4A1C /* Pods_nRFBlinky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D2ABBED0526CCFDE935416B /* Pods_nRFBlinky.framework */; };
 		F0A6C9F229A9100200FA75EB /* AdvertisingTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A6C9F129A9100200FA75EB /* AdvertisingTest.swift */; };
+		F0A6C9F229A9100200FA75EC /* PeripheralManagerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A6C9F129A9100200FA75EC /* PeripheralManagerTest.swift */; };
 		FD694FD2565733B80A796310 /* Pods_nRFBlinky_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 39F46F48F88E4B881853C6D0 /* Pods_nRFBlinky_Tests.framework */; };
 /* End PBXBuildFile section */
 
@@ -138,6 +139,7 @@
 		EF952C1221D6FC1BB09999FC /* Pods-nRFBlinky-nRFBlinky_UITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nRFBlinky-nRFBlinky_UITests.release.xcconfig"; path = "Target Support Files/Pods-nRFBlinky-nRFBlinky_UITests/Pods-nRFBlinky-nRFBlinky_UITests.release.xcconfig"; sourceTree = "<group>"; };
 		F04F4A2C2B839E67004E7942 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F0A6C9F129A9100200FA75EB /* AdvertisingTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisingTest.swift; sourceTree = "<group>"; };
+		F0A6C9F129A9100200FA75EC /* PeripheralManagerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralManagerTest.swift; sourceTree = "<group>"; };
 		F0A6C9F329ACA59A00FA75EB /* nRFBlinky.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = nRFBlinky.entitlements; path = nRFBlinky/nRFBlinky.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -191,6 +193,7 @@
 			children = (
 				52A648F0240E83F000817F2F /* NormalBehaviorTest.swift */,
 				F0A6C9F129A9100200FA75EB /* AdvertisingTest.swift */,
+				F0A6C9F129A9100200FA75EC /* PeripheralManagerTest.swift */,
 				2DBB22CFA82E35CBA3BB326F /* ResetTest.swift */,
 				52E905CD24DD35A100BB5740 /* FailedConnectionTest.swift */,
 				7E5A00000000000000000A00 /* CentralBehaviorTestCase.swift */,
@@ -635,6 +638,7 @@
 				2DBB258568F7E07E0DFA3B4E /* EventHelper.swift in Sources */,
 				52E905CE24DD35A100BB5740 /* FailedConnectionTest.swift in Sources */,
 				F0A6C9F229A9100200FA75EB /* AdvertisingTest.swift in Sources */,
+				F0A6C9F229A9100200FA75EC /* PeripheralManagerTest.swift in Sources */,
 				52A128B726CD9AF800DE5F37 /* MultipleInstancesTest.swift in Sources */,
 				2DBB2D9D87AA009D95C10DEE /* ResetTest.swift in Sources */,
 			);
