@@ -1188,23 +1188,26 @@ open class CBMCentralManagerMock: CBMCentralManager {
         switch delegate.peripheral(mock,
                                    didReceiveServiceDiscoveryRequest: serviceUUIDs) {
         case .success:
-            services = services ?? []
-            let initialSize = services!.count
-            services = services! + mockServices
+            let discoveredServices = services ?? []
+            let newServices = mockServices
                 // Filter all device services that match given list (if set).
                 .filter { serviceUUIDs == nil || serviceUUIDs!.isEmpty || serviceUUIDs!.contains($0.uuid) }
                 // Filter those of them, that are not already in discovered services.
-                .filter { s in !services!
+                .filter { s in !discoveredServices
                     .contains { ds in s.identifier == ds.identifier }
                 }
                 // Copy the service info, without included services or characteristics.
                 .map { CBMService(shallowCopy: $0, for: self) }
-            let newServicesCount = services!.count - initialSize
             // Service discovery may takes the more time, the more services
             // are discovered.
-            let delay = interval * Double(newServicesCount)
+            let delay = interval * Double(newServices.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The services become available when discovery completes.
+                    let known = self.services ?? []
+                    self.services = known + newServices.filter { s in
+                        !known.contains { $0.identifier == s.identifier }
+                    }
                     self.delegate?.peripheral(self, didDiscoverServices: nil)
                 }
             }

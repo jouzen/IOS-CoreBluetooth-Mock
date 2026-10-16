@@ -64,7 +64,6 @@ class PeripheralBehaviorTest: CentralBehaviorTestCase {
     }
 
     func testServicesAreNotAvailableUntilDiscoveryCompletes() throws {
-        try skipKnownIssue("services are set synchronously, before didDiscoverServices")
         setUpManager()
         let peripheral = try connectToDevice()
 
