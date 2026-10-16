@@ -564,7 +564,6 @@ class PeripheralBehaviorTest: CentralBehaviorTestCase {
     // MARK: - Delegate
 
     func testPeripheralDelegateIsWeak() throws {
-        try skipKnownIssue("CBMPeripheralMock.delegate is a strong reference")
         setUpManager()
         let peripheral = try retrieveDevice()
 

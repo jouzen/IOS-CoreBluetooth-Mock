@@ -916,7 +916,7 @@ open class CBMCentralManagerMock: CBMCentralManager {
         return mock.isConnected
     }
     
-    open var delegate: CBMPeripheralDelegate?
+    open weak var delegate: CBMPeripheralDelegate?
     
     open override var identifier: UUID {
         return mock.identifier
