@@ -53,6 +53,11 @@ public class CBMCentralSpec {
     ///
     /// Requests and updates are delivered a connection interval later.
     public let connectionInterval: TimeInterval
+    /// The time after which a read or write request, which was not responded to by the
+    /// peripheral manager, fails with ``CBMError/Code/connectionTimeout``.
+    ///
+    /// The ATT transaction timeout is 30 seconds.
+    public let attributeProtocolTimeout: TimeInterval
     /// The delegate that will receive notifications and indications.
     public var delegate: CBMCentralSpecDelegate?
     /// A serial queue synchronizing access to the connection state, which is
@@ -81,14 +86,18 @@ public class CBMCentralSpec {
     ///                               central can receive in a single notification or
     ///                               indication. Defaults to 20 bytes (MTU 23 - 3).
     ///   - connectionInterval: The connection interval, in seconds.
+    ///   - attributeProtocolTimeout: The time, in seconds, after which a request that was
+    ///                               not responded to fails. Defaults to 30 seconds.
     ///   - delegate: The delegate that will receive notifications and indications.
     public init(identifier: UUID = UUID(),
                 maximumUpdateValueLength: Int = 20,
                 connectionInterval: TimeInterval = 0.045,
+                attributeProtocolTimeout: TimeInterval = 30.0,
                 delegate: CBMCentralSpecDelegate? = nil) {
         self.identifier = identifier
         self.maximumUpdateValueLength = max(1, maximumUpdateValueLength)
         self.connectionInterval = connectionInterval
+        self.attributeProtocolTimeout = attributeProtocolTimeout
         self.delegate = delegate
     }
 

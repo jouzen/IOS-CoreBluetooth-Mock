@@ -273,6 +273,52 @@ class PeripheralManagerBehaviorTest: XCTestCase {
         wait(for: [failed], timeout: 1.0)
     }
 
+    func testUnansweredRequestTimesOut() throws {
+        central = CBMCentralSpec(connectionInterval: 0.01, attributeProtocolTimeout: 0.2)
+        central.simulateConnection()
+        var requests: [CBMATTRequest] = []
+        delegate.onRead = { _, request in requests.append(request) }
+
+        var completions = 0
+        let failed = expectation(description: "Read timed out")
+        central.simulateReadRequest(for: readCharacteristic) { result in
+            completions += 1
+            guard case .failure(let error) = result else { return XCTFail("Should fail") }
+            XCTAssertEqual((error as? CBMError)?.code, .connectionTimeout)
+            failed.fulfill()
+        }
+        wait(for: [failed], timeout: 1.0)
+
+        // A late response is ignored.
+        if let request = requests.first {
+            manager.respond(to: request, withResult: .success)
+        }
+        let unexpected = expectation(description: "No second completion")
+        unexpected.isInverted = true
+        wait(for: [unexpected], timeout: 0.2)
+        XCTAssertEqual(completions, 1)
+    }
+
+    func testAnsweredRequestDoesNotTimeOut() throws {
+        central = CBMCentralSpec(connectionInterval: 0.01, attributeProtocolTimeout: 0.2)
+        central.simulateConnection()
+        delegate.onWrite = { manager, requests in
+            manager.respond(to: requests[0], withResult: .success)
+        }
+        var completions = 0
+        let written = expectation(description: "Written")
+        central.simulateWriteRequest(Data([0x01]), for: writeCharacteristic) { result in
+            completions += 1
+            if case .failure(let error) = result { XCTFail("Unexpected error: \(error)") }
+            written.fulfill()
+        }
+        wait(for: [written], timeout: 1.0)
+        let unexpected = expectation(description: "No timeout")
+        unexpected.isInverted = true
+        wait(for: [unexpected], timeout: 0.4)
+        XCTAssertEqual(completions, 1)
+    }
+
     // MARK: - Notifications
 
     private func subscribe() {

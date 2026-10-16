@@ -574,6 +574,7 @@ extension CBMPeripheralManagerMock {
                 reply(.failure(CBMError(.notConnected)))
                 return
             }
+            self.scheduleTimeout(of: request, for: spec)
             self.delegate?.peripheralManager(self, didReceiveRead: request)
         }
     }
@@ -649,6 +650,9 @@ extension CBMPeripheralManagerMock {
                 return
             }
 
+            if isWithResponse {
+                self.scheduleTimeout(of: request, for: spec)
+            }
             self.delegate?.peripheralManager(self, didReceiveWrite: [request])
         }
     }
@@ -706,6 +710,23 @@ extension CBMPeripheralManagerMock {
         queue.async { [weak self] in
             if let self = self, self.state == .poweredOn {
                 self.delegate?.peripheralManager(self, didAdd: service, error: error)
+            }
+        }
+    }
+
+    /// Fails the request, if it was not responded to before the ATT timeout of the central.
+    private func scheduleTimeout(of request: CBMATTRequestMock, for spec: CBMCentralSpec) {
+        queue.asyncAfter(deadline: .now() + spec.attributeProtocolTimeout) { [weak self] in
+            guard let self = self else { return }
+            let isPending: Bool = self.mutex.sync {
+                guard let index = self.pendingRequests.firstIndex(where: { $0 === request }) else {
+                    return false
+                }
+                self.pendingRequests.remove(at: index)
+                return true
+            }
+            if isPending {
+                request.abort(CBMError(.connectionTimeout))
             }
         }
     }
