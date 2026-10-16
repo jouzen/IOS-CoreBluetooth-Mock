@@ -378,7 +378,6 @@ class PeripheralBehaviorTest: CentralBehaviorTestCase {
     }
 
     func testWritesWithoutResponseAreLimitedByTheBuffer() throws {
-        try skipKnownIssue("writes exceeding the transmit buffer are not dropped")
         setUpManager()
         let peripheral = try connectAndDiscover()
         let characteristic = try characteristic(TestDevice.writeChar, of: peripheral)
