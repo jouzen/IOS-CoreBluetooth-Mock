@@ -30,6 +30,9 @@ The *Core Bluetooth Mock* library defines a number of **CBM...** classes and con
 behavior as `CBCentralManager`, etc. On physical iDevices all calls to `CBMCentralManager` and `CBMPeripheral` are
 forwarded to their native equivalents, but on a simulator a user defined mock implementation is used. 
 
+Both roles are supported: apps that act as a *central* (`CBMCentralManager`, simulated using `CBMPeripheralSpec`) and
+apps that act as a *peripheral* (`CBMPeripheralManager`, simulated using `CBMCentralSpec`).
+
 ## Requirements
 
 The *Core Bluetooth Mock* library is available only in *Swift*, and compatible with 

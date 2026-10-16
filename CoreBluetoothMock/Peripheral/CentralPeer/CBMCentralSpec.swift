@@ -196,7 +196,7 @@ public class CBMCentralSpec {
     ///
     /// All peripheral managers will be notified about the central unsubscribing
     /// from all characteristics it was subscribed to using
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:central:didUnsubscribeFrom:)-7k1ei``.
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:central:didUnsubscribeFrom:)``.
     public func simulateDisconnection() {
         guard isConnected else {
             return
@@ -209,7 +209,7 @@ public class CBMCentralSpec {
     /// given characteristic.
     ///
     /// The peripheral manager which published the characteristic will receive
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:central:didSubscribeTo:)-4jl9z``
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:central:didSubscribeTo:)``
     /// a connection interval later. The characteristic must have `.notify` or
     /// `.indicate` property, otherwise the request is ignored.
     /// - Parameter characteristic: The characteristic to subscribe to.
@@ -231,7 +231,7 @@ public class CBMCentralSpec {
     /// given characteristic.
     ///
     /// The peripheral manager which published the characteristic will receive
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:central:didUnsubscribeFrom:)-7k1ei``
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:central:didUnsubscribeFrom:)``
     /// a connection interval later.
     /// - Parameter characteristic: The characteristic to unsubscribe from.
     public func simulateUnsubscription(from characteristic: CBMMutableCharacteristic) {
@@ -246,7 +246,7 @@ public class CBMCentralSpec {
     ///
     /// If the characteristic has a cached value, it is returned automatically.
     /// Otherwise, the peripheral manager which published the characteristic will
-    /// receive ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveRead:)-8sx65``
+    /// receive ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveRead:)``
     /// a connection interval later and the completion handler will be called with
     /// the result after the peripheral manager responds using
     /// ``CBMPeripheralManager/respond(to:withResult:)``.
@@ -269,7 +269,7 @@ public class CBMCentralSpec {
     /// Simulates a write request (write with response) sent from the central.
     ///
     /// The peripheral manager which published the characteristic will receive
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveWrite:)-1d33g``
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveWrite:)``
     /// a connection interval later and the completion handler will be called with
     /// the result after the peripheral manager responds using
     /// ``CBMPeripheralManager/respond(to:withResult:)``.
@@ -294,7 +294,7 @@ public class CBMCentralSpec {
     /// Simulates a write command (write without response) sent from the central.
     ///
     /// The peripheral manager which published the characteristic will receive
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveWrite:)-1d33g``
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveWrite:)``
     /// a connection interval later. The peripheral manager must not respond to
     /// the request.
     ///

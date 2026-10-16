@@ -44,7 +44,7 @@ open class CBMPeripheralManagerMock: CBMPeripheralManager {
 
     /// Size of the transmit queue for notifications and indications.
     /// Only this many updates can be sent without waiting for
-    /// ``CBMPeripheralManagerDelegate/peripheralManagerIsReady(toUpdateSubscribers:)-1n35f``.
+    /// ``CBMPeripheralManagerDelegate/peripheralManagerIsReady(toUpdateSubscribers:)``.
     private static let updateQueueSize = 20
 
     /// The dispatch queue used for all delegate callbacks.
@@ -81,7 +81,7 @@ open class CBMPeripheralManagerMock: CBMPeripheralManager {
     /// (``CBMPeripheralManagerOptionRestoreIdentifierKey``).
     ///
     /// The returned map, if not `nil`, will be passed to
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:willRestoreState:)-4tv1g`` before creation.
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:willRestoreState:)`` before creation.
     /// - SeeAlso: ``CBMPeripheralManagerRestoredStateServicesKey``
     /// - SeeAlso: ``CBMPeripheralManagerRestoredStateAdvertisementDataKey``
     public static var simulateStateRestoration: ((_ identifierKey: String) -> [String : Any]?)?

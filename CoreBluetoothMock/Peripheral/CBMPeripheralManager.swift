@@ -48,7 +48,7 @@ open class CBMPeripheralManager: NSObject {
     ///
     /// If you migrated to CoreBluetooth Mock and are getting an error with
     /// instantiating a ``CBMPeripheralManager`` instance, use
-    /// ``CBMPeripheralManagerFactory/instance(delegate:queue:forceMock:)`` instead.
+    /// ``CBMPeripheralManagerFactory/instance(delegate:queue:options:forceMock:)`` instead.
     public init(_ dummy: Bool) {
         // No-op.
     }
@@ -91,7 +91,7 @@ open class CBMPeripheralManager: NSObject {
     /// Advertises peripheral manager data.
     ///
     /// When you start advertising peripheral data, the peripheral manager calls the
-    /// ``CBMPeripheralManagerDelegate/peripheralManagerDidStartAdvertising(_:error:)-4p0nc``
+    /// ``CBMPeripheralManagerDelegate/peripheralManagerDidStartAdvertising(_:error:)``
     /// method of its delegate object.
     ///
     /// Core Bluetooth advertises data on a “best effort” basis, due to limited space and
@@ -138,7 +138,7 @@ open class CBMPeripheralManager: NSObject {
     /// descriptors to the local GATT database.
     ///
     /// When you add a service to the database, the peripheral manager calls the
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didAdd:error:)-9ex2j``
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didAdd:error:)``
     /// method of its delegate object. If the service contains any included services,
     /// publish them first.
     ///
@@ -167,8 +167,8 @@ open class CBMPeripheralManager: NSObject {
     /// Responds to a read or write request from a connected central.
     ///
     /// When the peripheral manager receives a read or write request from a connected central,
-    /// it calls the ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveRead:)-8sx65``
-    /// or ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveWrite:)-1d33g``
+    /// it calls the ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveRead:)``
+    /// or ``CBMPeripheralManagerDelegate/peripheralManager(_:didReceiveWrite:)``
     /// method of its delegate object. Call this method exactly once for each request
     /// (or for the first request in case of multiple write requests).
     /// - Parameters:
@@ -183,7 +183,7 @@ open class CBMPeripheralManager: NSObject {
     ///
     /// If the underlying transmit queue is full, the method returns `false`. When space
     /// becomes available, the peripheral manager calls the
-    /// ``CBMPeripheralManagerDelegate/peripheralManagerIsReady(toUpdateSubscribers:)-1n35f``
+    /// ``CBMPeripheralManagerDelegate/peripheralManagerIsReady(toUpdateSubscribers:)``
     /// method of its delegate object.
     /// - Parameters:
     ///   - value: The value to send.
@@ -201,7 +201,7 @@ open class CBMPeripheralManager: NSObject {
     /// Publishes an L2CAP channel over the peripheral manager.
     ///
     /// When the peripheral manager publishes the channel, it calls the
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didPublishL2CAPChannel:error:)-3s7pv``
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didPublishL2CAPChannel:error:)``
     /// method of its delegate object.
     /// - Parameter encryptionRequired: `true` if the channel requires encryption.
     @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
@@ -212,7 +212,7 @@ open class CBMPeripheralManager: NSObject {
     /// Removes an L2CAP channel over the peripheral manager.
     ///
     /// When the peripheral manager unpublishes the channel, it calls the
-    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didUnpublishL2CAPChannel:error:)-7t9nh``
+    /// ``CBMPeripheralManagerDelegate/peripheralManager(_:didUnpublishL2CAPChannel:error:)``
     /// method of its delegate object.
     /// - Parameter PSM: The PSM of the channel to unpublish.
     @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
