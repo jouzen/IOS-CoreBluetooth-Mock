@@ -110,6 +110,15 @@ open class CBMPeripheralDelegateProxy: NSObject, CBMPeripheralDelegate {
     open func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBMPeripheral) {
         isReadyToSendWriteWithoutResponse?(peripheral)
     }
+
+    // This method must be declared in this class, so that the class (and not the default
+    // implementation from the protocol extension) is the witness of the protocol requirement.
+    // Otherwise it could not be overridden in ``CBMPeripheralDelegateProxyWithL2CAPChannel``.
+    @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
+    open func peripheral(_ peripheral: CBMPeripheral,
+                         didOpen channel: CBML2CAPChannel?, error: Error?) {
+        // Empty. See CBMPeripheralDelegateProxyWithL2CAPChannel.
+    }
 }
 
 /// A helper class that allows setting delegate callbacks as closures.
@@ -122,8 +131,8 @@ open class CBMPeripheralDelegateProxyWithL2CAPChannel: CBMPeripheralDelegateProx
     public var didOpenChannel: ((CBMPeripheral, CBML2CAPChannel?, Error?) -> ())?
 
     @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
-    open func peripheral(_ peripheral: CBMPeripheral,
-                         didOpen channel: CBML2CAPChannel?, error: Error?) {
+    open override func peripheral(_ peripheral: CBMPeripheral,
+                                  didOpen channel: CBML2CAPChannel?, error: Error?) {
         didOpenChannel?(peripheral, channel, error)
     }
 }

@@ -37,6 +37,8 @@ private final class TestDelegate: NSObject, CBMPeripheralManagerDelegate {
     var onRead: ((CBMPeripheralManager, CBMATTRequest) -> Void)?
     var onWrite: ((CBMPeripheralManager, [CBMATTRequest]) -> Void)?
     var onReady: (() -> Void)?
+    var onPublishL2CAP: ((CBML2CAPPSM, Error?) -> Void)?
+    var onUnpublishL2CAP: ((CBML2CAPPSM, Error?) -> Void)?
 
     func peripheralManagerDidUpdateState(_ peripheral: CBMPeripheralManager) {}
 
@@ -54,6 +56,18 @@ private final class TestDelegate: NSObject, CBMPeripheralManagerDelegate {
 
     func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBMPeripheralManager) {
         onReady?()
+    }
+
+    @available(iOS 11.0, *)
+    func peripheralManager(_ peripheral: CBMPeripheralManager,
+                           didPublishL2CAPChannel PSM: CBML2CAPPSM, error: Error?) {
+        onPublishL2CAP?(PSM, error)
+    }
+
+    @available(iOS 11.0, *)
+    func peripheralManager(_ peripheral: CBMPeripheralManager,
+                           didUnpublishL2CAPChannel PSM: CBML2CAPPSM, error: Error?) {
+        onUnpublishL2CAP?(PSM, error)
     }
 }
 
@@ -384,6 +398,28 @@ class PeripheralManagerBehaviorTest: XCTestCase {
         subscribe()
         manager.removeAllServices()
         XCTAssertNil(notifyCharacteristic.subscribedCentrals)
+    }
+
+    // MARK: - L2CAP
+
+    func testPublishingL2CAPChannelReportsNotSupported() throws {
+        guard #available(iOS 11.0, *) else { throw XCTSkip("Requires iOS 11") }
+        let published = expectation(description: "Publish reported")
+        delegate.onPublishL2CAP = { _, error in
+            XCTAssertEqual((error as? CBMError)?.code, .operationNotSupported)
+            published.fulfill()
+        }
+        manager.publishL2CAPChannel(withEncryption: false)
+        wait(for: [published], timeout: 1.0)
+
+        let unpublished = expectation(description: "Unpublish reported")
+        delegate.onUnpublishL2CAP = { psm, error in
+            XCTAssertEqual(psm, 0x80)
+            XCTAssertNotNil(error)
+            unpublished.fulfill()
+        }
+        manager.unpublishL2CAPChannel(0x80)
+        wait(for: [unpublished], timeout: 1.0)
     }
 
     // MARK: - Adapter and authorization

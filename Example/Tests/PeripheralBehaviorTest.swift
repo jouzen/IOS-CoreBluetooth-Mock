@@ -610,6 +610,25 @@ class PeripheralBehaviorTest: CentralBehaviorTestCase {
         }
     }
 
+    // MARK: - L2CAP
+
+    func testOpeningL2CAPChannelReportsNotSupported() throws {
+        guard #available(iOS 11.0, *) else { throw XCTSkip("Requires iOS 11") }
+        setUpManager()
+        let peripheral = try connectToDevice()
+        let l2capDelegate = CBMPeripheralDelegateProxyWithL2CAPChannel()
+        peripheral.delegate = l2capDelegate
+
+        waitFor("Channel reported") { reported in
+            l2capDelegate.didOpenChannel = { _, channel, error in
+                XCTAssertNil(channel)
+                XCTAssertEqual((error as? CBMError)?.code, .operationNotSupported)
+                reported.fulfill()
+            }
+            peripheral.openL2CAPChannel(0x80)
+        }
+    }
+
     // MARK: - Delegate
 
     func testPeripheralDelegateIsWeak() throws {

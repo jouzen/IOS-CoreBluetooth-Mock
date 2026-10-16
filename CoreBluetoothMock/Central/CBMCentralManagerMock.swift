@@ -874,7 +874,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
     #if !os(macOS)
     @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     open override func registerForConnectionEvents(options: [CBMConnectionEventMatchingOption : Any]? = nil) {
-        fatalError("Mock connection events are not implemented")
+        // Connection events are not simulated. The delegate will not be notified.
+        NSLog("[CoreBluetoothMock] Connection events are not implemented in the mock.")
     }
     #endif
     
@@ -1663,7 +1664,18 @@ open class CBMCentralManagerMock: CBMCentralManager {
     
     @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
     open func openL2CAPChannel(_ PSM: CBML2CAPPSM) {
-        fatalError("L2CAP mock is not implemented")
+        // Central manager must be in powered on state.
+        guard manager.ensurePoweredOn() else { return }
+        guard state == .connected else {
+            return
+        }
+        // L2CAP channels are not simulated. Report that the operation is not supported.
+        NSLog("[CoreBluetoothMock] L2CAP channels are not implemented in the mock. Opening channel with PSM \(PSM) failed.")
+        queue.async { [weak self] in
+            if let self = self, self.state == .connected {
+                self.delegate?.peripheral(self, didOpen: nil, error: CBMError(.operationNotSupported))
+            }
+        }
     }
     
     open override var hash: Int {

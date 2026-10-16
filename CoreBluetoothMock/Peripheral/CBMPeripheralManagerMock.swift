@@ -390,12 +390,30 @@ open class CBMPeripheralManagerMock: CBMPeripheralManager {
 
     @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
     open override func publishL2CAPChannel(withEncryption encryptionRequired: Bool) {
-        fatalError("L2CAP mock is not implemented")
+        guard ensurePoweredOn() else { return }
+        // L2CAP channels are not simulated. Report that the operation is not supported.
+        NSLog("[CoreBluetoothMock] L2CAP channels are not implemented in the mock. Publishing a channel failed.")
+        queue.async { [weak self] in
+            if let self = self, self.state == .poweredOn {
+                self.delegate?.peripheralManager(self,
+                                                 didPublishL2CAPChannel: 0,
+                                                 error: CBMError(.operationNotSupported))
+            }
+        }
     }
 
     @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
     open override func unpublishL2CAPChannel(_ PSM: CBML2CAPPSM) {
-        fatalError("L2CAP mock is not implemented")
+        guard ensurePoweredOn() else { return }
+        // No channel could have been published, see publishL2CAPChannel(withEncryption:).
+        NSLog("[CoreBluetoothMock] L2CAP channels are not implemented in the mock. Unpublishing channel with PSM \(PSM) failed.")
+        queue.async { [weak self] in
+            if let self = self, self.state == .poweredOn {
+                self.delegate?.peripheralManager(self,
+                                                 didUnpublishL2CAPChannel: PSM,
+                                                 error: CBMError(.operationNotSupported))
+            }
+        }
     }
 
     open override var debugDescription: String {

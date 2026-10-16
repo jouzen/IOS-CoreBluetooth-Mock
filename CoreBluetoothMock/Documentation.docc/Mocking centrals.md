@@ -92,4 +92,5 @@ disconnects or the adapter is turned off before the app responded.
 * Only ``CBMAdvertisementDataLocalNameKey`` and ``CBMAdvertisementDataServiceUUIDsKey`` are
   supported in advertisement data. Other keys are ignored.
 * Prepared (queued) writes are not simulated: the delegate always receives a single write request.
-* L2CAP channels are not implemented.
+* L2CAP channels are not implemented. Publishing or unpublishing a channel is reported to the
+  delegate with `CBError.operationNotSupported`.

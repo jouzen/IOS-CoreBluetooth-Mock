@@ -17,5 +17,9 @@ However, to make mocking possible, some tradeoffs were made.
 ### Not implemented
 
 1. L2CAP channels are not implemented, for neither the central nor the peripheral role.
-2. Bluetooth authorization popups are not implemented.
+   Opening, publishing or unpublishing a channel is reported to the delegate with
+   `CBError.operationNotSupported`.
+2. Connection events (``CBMCentralManager/registerForConnectionEvents(options:)``) are not
+   simulated; the method only logs a message.
+3. Bluetooth authorization popups are not implemented.
    See [#64](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/issues/64).
