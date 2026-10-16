@@ -340,6 +340,81 @@ class CentralManagerBehaviorTest: CentralBehaviorTestCase {
         XCTAssertEqual(peripheral.state, .disconnected)
     }
 
+    func testCancellingPendingConnectionReportsDisconnection() throws {
+        // The documentation of `cancelPeripheralConnection(_:)` covers active and pending
+        // connections, and the central manager reports the peripheral as disconnected.
+        // This has not been verified on a physical device.
+        setUpManager(proximity: .outOfRange)
+        let peripheral = try retrieveDevice()
+        manager.connect(peripheral)
+
+        waitFor("Disconnected") { disconnected in
+            managerDelegate.didDisconnect = { _, disconnectedPeripheral, _, isReconnecting, error in
+                XCTAssertTrue(disconnectedPeripheral === peripheral)
+                XCTAssertFalse(isReconnecting)
+                XCTAssertNil(error)
+                disconnected.fulfill()
+            }
+            manager.cancelPeripheralConnection(peripheral)
+        }
+        XCTAssertEqual(peripheral.state, .disconnected)
+        // The device never connected, so it is not notified.
+        XCTAssertEqual(device.disconnections, 0)
+    }
+
+    func testCancellingConnectionTwiceReportsOnce() throws {
+        setUpManager()
+        let peripheral = try connectToDevice()
+
+        var reports = 0
+        managerDelegate.didDisconnect = { _, _, _, _, _ in reports += 1 }
+        manager.cancelPeripheralConnection(peripheral)
+        manager.cancelPeripheralConnection(peripheral)
+        pause(0.3)
+
+        XCTAssertEqual(reports, 1)
+        XCTAssertEqual(peripheral.state, .disconnected)
+    }
+
+    func testCancellingAutoReconnect() throws {
+        guard #available(iOS 17.0, macOS 14.0, *) else { throw XCTSkip("Requires iOS 17") }
+        setUpManager()
+        let peripheral = try retrieveDevice()
+        waitFor("Connected") { connected in
+            managerDelegate.didConnect = { _, _ in connected.fulfill() }
+            manager.connect(peripheral, options: [CBMConnectPeripheralOptionEnableAutoReconnect: true])
+        }
+
+        // The device disconnects, and the central starts reconnecting.
+        waitFor("Disconnected, reconnecting", timeout: 6.0) { disconnected in
+            managerDelegate.didDisconnect = { _, _, _, isReconnecting, error in
+                XCTAssertTrue(isReconnecting)
+                XCTAssertNotNil(error)
+                disconnected.fulfill()
+            }
+            // Out of range, so that the reconnection stays pending.
+            device.spec.simulateProximityChange(.outOfRange)
+        }
+        XCTAssertEqual(peripheral.state, .connecting)
+
+        // Cancelling stops the reconnection.
+        waitFor("Disconnected") { disconnected in
+            managerDelegate.didDisconnect = { _, _, _, isReconnecting, error in
+                XCTAssertFalse(isReconnecting)
+                XCTAssertNil(error)
+                disconnected.fulfill()
+            }
+            manager.cancelPeripheralConnection(peripheral)
+        }
+        XCTAssertEqual(peripheral.state, .disconnected)
+
+        waitFor("Not reconnected", timeout: 0.5, inverted: true) { connected in
+            managerDelegate.didConnect = { _, _ in connected.fulfill() }
+            device.spec.simulateProximityChange(.near)
+        }
+        XCTAssertEqual(peripheral.state, .disconnected)
+    }
+
     func testCancellingConnection() throws {
         setUpManager()
         let peripheral = try connectToDevice()
