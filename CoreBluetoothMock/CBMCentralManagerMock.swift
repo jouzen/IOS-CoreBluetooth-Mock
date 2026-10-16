@@ -1492,12 +1492,18 @@ open class CBMCentralManagerMock: CBMCentralManager {
             }
         } else {
             // Decrease buffer.
-            mutex.sync {
+            let hasSpace: Bool = mutex.sync {
                 guard self.availableWriteWithoutResponseBuffer > 0 else {
-                    return
+                    return false
                 }
                 self.availableWriteWithoutResponseBuffer -= 1
                 self._canSendWriteWithoutResponse = false
+                return true
+            }
+            // When the buffer is full, the command is dropped. The app should
+            // wait for `peripheralIsReady(toSendWriteWithoutResponse:)`.
+            guard hasSpace else {
+                return
             }
             
             delegate.peripheral(mock,
