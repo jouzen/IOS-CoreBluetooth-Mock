@@ -68,6 +68,8 @@ final class TestDevice: CBMPeripheralSpecDelegate {
     private(set) var commands: [(uuid: CBMUUID, data: Data)] = []
     private(set) var notifyRequests: [(uuid: CBMUUID, enabled: Bool)] = []
     private(set) var disconnections = 0
+    private(set) var connectionRequests = 0
+    private(set) var descriptorWrites: [(uuid: CBMUUID, data: Data)] = []
 
     // Attributes of the device. They are created for each instance, as their
     // identity is used when matching them with the peripheral's copies.
@@ -116,6 +118,7 @@ final class TestDevice: CBMPeripheralSpecDelegate {
 
     func peripheralDidReceiveConnectionRequest(_ peripheral: CBMPeripheralSpec)
         -> Result<Void, Error> {
+        connectionRequests += 1
         return connectionResult
     }
 
@@ -148,6 +151,13 @@ final class TestDevice: CBMPeripheralSpecDelegate {
                     didReceiveReadRequestFor descriptor: CBMDescriptorMock)
         -> Result<Data, Error> {
         return .success(Data("description".utf8))
+    }
+
+    func peripheral(_ peripheral: CBMPeripheralSpec,
+                    didReceiveWriteRequestFor descriptor: CBMDescriptorMock,
+                    data: Data) -> Result<Void, Error> {
+        descriptorWrites.append((descriptor.uuid, data))
+        return .success(())
     }
 
     func peripheral(_ peripheral: CBMPeripheralSpec,
