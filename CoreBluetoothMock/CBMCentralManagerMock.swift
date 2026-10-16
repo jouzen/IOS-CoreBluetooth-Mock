@@ -1239,24 +1239,26 @@ open class CBMCentralManagerMock: CBMCentralManager {
                                    didReceiveIncludedServiceDiscoveryRequest: includedServiceUUIDs,
                                    for: mockService) {
         case .success:
-            service._includedServices = service._includedServices ?? []
-            let initialSize = service._includedServices!.count
-            service._includedServices = service._includedServices! +
-                mockIncludedServices
-                    // Filter all included service that match given list (if set).
-                    .filter { includedServiceUUIDs == nil || includedServiceUUIDs!.isEmpty || includedServiceUUIDs!.contains($0.uuid) }
-                    // Filter those of them, that are not already in discovered services.
-                    .filter { s in !service._includedServices!
-                        .contains { ds in s.identifier == ds.identifier }
-                    }
-                    // Copy the service info, without included characteristics.
-                    .map { CBMService(shallowCopy: $0, for: self) }
-            let newServicesCount = service._includedServices!.count - initialSize
+            let discovered = service._includedServices ?? []
+            let newServices = mockIncludedServices
+                // Filter all included service that match given list (if set).
+                .filter { includedServiceUUIDs == nil || includedServiceUUIDs!.isEmpty || includedServiceUUIDs!.contains($0.uuid) }
+                // Filter those of them, that are not already in discovered services.
+                .filter { s in !discovered
+                    .contains { ds in s.identifier == ds.identifier }
+                }
+                // Copy the service info, without included characteristics.
+                .map { CBMService(shallowCopy: $0, for: self) }
             // Service discovery may takes the more time, the more services
             // are discovered.
-            let delay = interval * Double(newServicesCount)
+            let delay = interval * Double(newServices.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The services become available when discovery completes.
+                    let known = service._includedServices ?? []
+                    service._includedServices = known + newServices.filter { s in
+                        !known.contains { $0.identifier == s.identifier }
+                    }
                     self.delegate?.peripheral(self,
                                               didDiscoverIncludedServicesFor: service,
                                               error: nil)
@@ -1293,24 +1295,26 @@ open class CBMCentralManagerMock: CBMCentralManager {
                                    didReceiveCharacteristicsDiscoveryRequest: characteristicUUIDs,
                                    for: mockService) {
         case .success:
-            service._characteristics = service._characteristics ?? []
-            let initialSize = service._characteristics!.count
-            service._characteristics = service._characteristics! +
-                mockCharacteristics
-                    // Filter all service characteristics that match given list (if set).
-                    .filter { characteristicUUIDs == nil || characteristicUUIDs!.isEmpty || characteristicUUIDs!.contains($0.uuid) }
-                    // Filter those of them, that are not already in discovered characteristics.
-                    .filter { c in !service._characteristics!
-                        .contains { dc in c.identifier == dc.identifier }
-                    }
-                    // Copy the characteristic info, without included descriptors or value.
-                    .map { CBMCharacteristic(shallowCopy: $0, in: service) }
-            let newCharacteristicsCount = service._characteristics!.count - initialSize
+            let discovered = service._characteristics ?? []
+            let newCharacteristics = mockCharacteristics
+                // Filter all service characteristics that match given list (if set).
+                .filter { characteristicUUIDs == nil || characteristicUUIDs!.isEmpty || characteristicUUIDs!.contains($0.uuid) }
+                // Filter those of them, that are not already in discovered characteristics.
+                .filter { c in !discovered
+                    .contains { dc in c.identifier == dc.identifier }
+                }
+                // Copy the characteristic info, without included descriptors or value.
+                .map { CBMCharacteristic(shallowCopy: $0, in: service) }
             // Characteristics discovery may takes the more time, the more characteristics
             // are discovered.
-            let delay = interval * Double(newCharacteristicsCount)
+            let delay = interval * Double(newCharacteristics.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The characteristics become available when discovery completes.
+                    let known = service._characteristics ?? []
+                    service._characteristics = known + newCharacteristics.filter { c in
+                        !known.contains { $0.identifier == c.identifier }
+                    }
                     self.delegate?.peripheral(self,
                                               didDiscoverCharacteristicsFor: service,
                                               error: nil)
@@ -1345,22 +1349,24 @@ open class CBMCentralManagerMock: CBMCentralManager {
         switch delegate.peripheral(mock,
                                    didReceiveDescriptorsDiscoveryRequestFor: mockCharacteristic) {
         case .success:
-            characteristic._descriptors = characteristic._descriptors ?? []
-            let initialSize = characteristic._descriptors!.count
-            characteristic._descriptors = characteristic._descriptors! +
-                mockDescriptors
-                    // Filter those of them, that are not already in discovered descriptors.
-                    .filter { d in !characteristic._descriptors!
-                        .contains { dd in d.identifier == dd.identifier }
-                    }
-                    // Copy the descriptors info, without the value.
-                    .map { CBMDescriptor(shallowCopy: $0, in: characteristic) }
-            let newDescriptorsCount = characteristic._descriptors!.count - initialSize
+            let discovered = characteristic._descriptors ?? []
+            let newDescriptors = mockDescriptors
+                // Filter those of them, that are not already in discovered descriptors.
+                .filter { d in !discovered
+                    .contains { dd in d.identifier == dd.identifier }
+                }
+                // Copy the descriptors info, without the value.
+                .map { CBMDescriptor(shallowCopy: $0, in: characteristic) }
             // Descriptors discovery may takes the more time, the more descriptors
             // are discovered.
-            let delay = interval * Double(newDescriptorsCount)
+            let delay = interval * Double(newDescriptors.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The descriptors become available when discovery completes.
+                    let known = characteristic._descriptors ?? []
+                    characteristic._descriptors = known + newDescriptors.filter { d in
+                        !known.contains { $0.identifier == d.identifier }
+                    }
                     self.delegate?.peripheral(self,
                                               didDiscoverDescriptorsFor: characteristic,
                                               error: nil)

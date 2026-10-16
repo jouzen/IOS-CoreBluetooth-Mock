@@ -154,6 +154,57 @@ class PeripheralBehaviorTest: CentralBehaviorTestCase {
         XCTAssertTrue(characteristics.allSatisfy { !$0.isNotifying })
     }
 
+    func testCharacteristicsAreNotAvailableUntilDiscoveryCompletes() throws {
+        setUpManager()
+        let peripheral = try connectToDevice()
+        waitFor("Services discovered") { discovered in
+            peripheralDelegate.didDiscoverServices = { _, _ in discovered.fulfill() }
+            peripheral.discoverServices(nil)
+        }
+        let service = try XCTUnwrap(peripheral.services?.first)
+
+        waitFor("Characteristics discovered") { discovered in
+            peripheralDelegate.didDiscoverCharacteristics = { _, _, _ in discovered.fulfill() }
+            peripheral.discoverCharacteristics(nil, for: service)
+            XCTAssertNil(service.characteristics)
+        }
+        XCTAssertEqual(service.characteristics?.count, 3)
+    }
+
+    func testCharacteristicsAreNotSetWhenDiscoveryFails() throws {
+        setUpManager()
+        let peripheral = try connectToDevice()
+        waitFor("Services discovered") { discovered in
+            peripheralDelegate.didDiscoverServices = { _, _ in discovered.fulfill() }
+            peripheral.discoverServices(nil)
+        }
+        let service = try XCTUnwrap(peripheral.services?.first)
+        device.discoveryResult = .failure(CBMATTError(.insufficientAuthentication))
+
+        waitFor("Discovery failed") { failed in
+            peripheralDelegate.didDiscoverCharacteristics = { _, _, error in
+                XCTAssertNotNil(error)
+                failed.fulfill()
+            }
+            peripheral.discoverCharacteristics(nil, for: service)
+        }
+        XCTAssertNil(service.characteristics)
+    }
+
+    func testDescriptorsAreNotAvailableUntilDiscoveryCompletes() throws {
+        setUpManager()
+        let peripheral = try connectAndDiscover()
+        let characteristic = try characteristic(TestDevice.notifyChar, of: peripheral)
+        XCTAssertNil(characteristic.descriptors)
+
+        waitFor("Descriptors discovered") { discovered in
+            peripheralDelegate.didDiscoverDescriptors = { _, _, _ in discovered.fulfill() }
+            peripheral.discoverDescriptors(for: characteristic)
+            XCTAssertNil(characteristic.descriptors)
+        }
+        XCTAssertEqual(characteristic.descriptors?.count, 1)
+    }
+
     func testDiscoverFilteredCharacteristics() throws {
         setUpManager()
         let peripheral = try connectToDevice()
