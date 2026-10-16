@@ -57,6 +57,7 @@ final class TestDevice: CBMPeripheralSpecDelegate {
     var connectionResult: Result<Void, Error> = .success(())
     var discoveryResult: Result<Void, Error> = .success(())
     var writeResult: Result<Void, Error> = .success(())
+    var descriptorWriteResult: Result<Void, Error> = .success(())
     var values: [CBMUUID : Data] = [
         readChar: Data([0x01, 0x02, 0x03]),
         notifyChar: Data([0x00]),
@@ -157,7 +158,7 @@ final class TestDevice: CBMPeripheralSpecDelegate {
                     didReceiveWriteRequestFor descriptor: CBMDescriptorMock,
                     data: Data) -> Result<Void, Error> {
         descriptorWrites.append((descriptor.uuid, data))
-        return .success(())
+        return descriptorWriteResult
     }
 
     func peripheral(_ peripheral: CBMPeripheralSpec,
