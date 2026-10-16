@@ -16,7 +16,6 @@ However, to make mocking possible, some tradeoffs were made.
 
 ### Not implemented
 
-1. As of now, the `CBPeripheralManager` is not supported. 
-   See [#40](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/issues/40).
+1. L2CAP channels are not implemented, for neither the central nor the peripheral role.
 2. Bluetooth authorization popups are not implemented.
    See [#64](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/issues/64).
