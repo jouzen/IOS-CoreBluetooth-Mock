@@ -77,8 +77,11 @@ disconnects or the adapter is turned off before the app responded.
 ### Behavior matching the native API
 
 * The manager reports ``CBMManagerState/unknown`` until the delegate is called with the
-  initial state, and is reset (advertising stops, services are removed, centrals disconnect)
-  when the adapter is turned off.
+  initial state. When the adapter is turned off, advertising stops, centrals disconnect and
+  requests that were not responded to fail. The published services stay in the database, so do
+  not add them again when the adapter is turned back on: the native manager raises an exception
+  ("Services cannot be added more than once"), and the mock reports an error to the delegate.
+  Advertising has to be started again.
 * Calling ``CBMPeripheralManager/startAdvertising(_:)`` while advertising reports
   `alreadyAdvertising` to the delegate.
 * Notifications are sent through a transmit queue of limited size. When

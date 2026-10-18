@@ -37,6 +37,7 @@ private final class TestDelegate: NSObject, CBMPeripheralManagerDelegate {
     var onRead: ((CBMPeripheralManager, CBMATTRequest) -> Void)?
     var onWrite: ((CBMPeripheralManager, [CBMATTRequest]) -> Void)?
     var onReady: (() -> Void)?
+    var onAdd: ((CBMService, Error?) -> Void)?
     var onPublishL2CAP: ((CBML2CAPPSM, Error?) -> Void)?
     var onUnpublishL2CAP: ((CBML2CAPPSM, Error?) -> Void)?
 
@@ -44,6 +45,10 @@ private final class TestDelegate: NSObject, CBMPeripheralManagerDelegate {
 
     func peripheralManagerDidStartAdvertising(_ peripheral: CBMPeripheralManager, error: Error?) {
         onStartAdvertising?(error)
+    }
+
+    func peripheralManager(_ peripheral: CBMPeripheralManager, didAdd service: CBMService, error: Error?) {
+        onAdd?(service, error)
     }
 
     func peripheralManager(_ peripheral: CBMPeripheralManager, didReceiveRead request: CBMATTRequest) {
@@ -471,6 +476,75 @@ class PeripheralManagerBehaviorTest: XCTestCase {
 
         XCTAssertFalse(central.isConnected)
         XCTAssertNil(central.simulateScan())
+    }
+
+    /// Turns the adapter off and on, and waits until the manager reports the changes.
+    private func powerCycle() {
+        CBMCentralManagerMock.simulatePowerOff()
+        waitUntil { self.manager.state == .poweredOff }
+        CBMCentralManagerMock.simulatePowerOn()
+        waitUntil { self.manager.state == .poweredOn }
+    }
+
+    func testServicesStayPublishedAfterPowerCycle() {
+        central.simulateConnection()
+        powerCycle()
+        // The central was disconnected.
+        XCTAssertFalse(central.isConnected)
+
+        // As in the native implementation, the service has not been removed.
+        central.simulateConnection()
+        let characteristics = central.simulateCharacteristicDiscovery(forService: serviceUUID)
+        XCTAssertEqual(characteristics.count, 4)
+
+        central.simulateSubscription(to: notifyCharacteristic)
+        waitUntil { self.notifyCharacteristic.subscribedCentrals?.count == 1 }
+        let read = expectation(description: "Read")
+        central.simulateReadRequest(for: cachedCharacteristic) { result in
+            XCTAssertEqual(try? result.get(), Data([0, 1, 2, 3, 4, 5]))
+            read.fulfill()
+        }
+        wait(for: [read], timeout: 1.0)
+    }
+
+    func testSubscriptionsAreClearedByPowerCycle() {
+        subscribe()
+        powerCycle()
+        XCTAssertNil(notifyCharacteristic.subscribedCentrals)
+    }
+
+    func testAdvertisingHasToBeRestartedAfterPowerCycle() {
+        let started = expectation(description: "Started")
+        delegate.onStartAdvertising = { _ in started.fulfill() }
+        manager.startAdvertising([CBMAdvertisementDataLocalNameKey: "Name"])
+        wait(for: [started], timeout: 1.0)
+
+        powerCycle()
+        XCTAssertFalse(manager.isAdvertising)
+        XCTAssertNil(central.simulateScan())
+
+        let restarted = expectation(description: "Restarted")
+        delegate.onStartAdvertising = { error in
+            XCTAssertNil(error)
+            restarted.fulfill()
+        }
+        manager.startAdvertising([CBMAdvertisementDataLocalNameKey: "Name"])
+        wait(for: [restarted], timeout: 1.0)
+        XCTAssertNotNil(central.simulateScan())
+    }
+
+    func testAddingServiceAgainIsRejected() throws {
+        // The native manager raises an exception, the mock reports an error.
+        let service = try XCTUnwrap(readCharacteristic.service as? CBMMutableService)
+        powerCycle()
+
+        let added = expectation(description: "Add reported")
+        delegate.onAdd = { _, error in
+            XCTAssertEqual((error as? CBMError)?.code, .invalidParameters)
+            added.fulfill()
+        }
+        manager.add(service)
+        wait(for: [added], timeout: 1.0)
     }
 
     func testLosingAuthorizationDisconnectsCentrals() throws {
