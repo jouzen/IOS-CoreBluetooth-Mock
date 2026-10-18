@@ -102,7 +102,12 @@ class PeripheralConformanceTest: XCTestCase {
         var onDone: (() -> Void)?
         var onSubscribe: (() -> Void)?
         var service: CBMMutableService?
+        /// The native manager keeps published services when the adapter is turned off and
+        /// on, and adding a service twice raises an exception.
+        private var serviceAdded = false
         var notify: CBMMutableCharacteristic?
+        /// Payload sizes used to probe the transmit queue, see `sendBatch`.
+        private var batchSizes = [20, 100, 500, 20]
         var advertisement: [String : Any] = [:]
 
         private func characteristicName(_ uuid: CBMUUID) -> String {
@@ -125,7 +130,8 @@ class PeripheralConformanceTest: XCTestCase {
 
         func peripheralManagerDidUpdateState(_ peripheral: CBMPeripheralManager) {
             record("state \(peripheral.state.rawValue)")
-            if peripheral.state == .poweredOn, let service = service {
+            if peripheral.state == .poweredOn, let service = service, !serviceAdded {
+                serviceAdded = true
                 peripheral.add(service)
             }
         }
@@ -143,12 +149,30 @@ class PeripheralConformanceTest: XCTestCase {
                                didSubscribeTo characteristic: CBMCharacteristic) {
             record("didSubscribeTo \(characteristic.uuid) maximumUpdateValueLength>=20=\(central.maximumUpdateValueLength >= 20) subscribed=\((characteristic as? CBMMutableCharacteristic)?.subscribedCentrals?.count ?? -1)")
             onSubscribe?()
-            guard let notify = notify else { return }
-            // Longer than any update can be, so the value is truncated.
-            for i in 0..<3 {
-                let accepted = peripheral.updateValue(Data(repeating: UInt8(i + 1), count: 600),
-                                                      for: notify, onSubscribedCentrals: nil)
-                record("updateValue #\(i + 1) -> \(accepted)")
+            sendBatch(peripheral)
+        }
+
+        /// Sends updates of the next payload size until the transmit queue is full, and
+        /// logs how many were accepted. The next batch is sent when the manager reports
+        /// that it is ready again, after a pause that lets the queue drain, so that every
+        /// batch starts with an empty queue. Payloads longer than the central can receive
+        /// are truncated.
+        private func sendBatch(_ peripheral: CBMPeripheralManager) {
+            guard let notify = notify, !batchSizes.isEmpty else { return }
+            let size = batchSizes.removeFirst()
+            let limit = 300
+            var accepted = 0
+            while accepted < limit,
+                  peripheral.updateValue(Data(repeating: UInt8(size % 250), count: size),
+                                         for: notify, onSubscribedCentrals: nil) {
+                accepted += 1
+            }
+            record("updateValue size=\(size) accepted=\(accepted) queueFull=\(accepted < limit)")
+            if accepted >= limit {
+                // The queue did not fill up. Go on.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.sendBatch(peripheral)
+                }
             }
         }
 
@@ -181,6 +205,9 @@ class PeripheralConformanceTest: XCTestCase {
 
         func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBMPeripheralManager) {
             record("isReadyToUpdateSubscribers")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                self?.sendBatch(peripheral)
+            }
         }
     }
 
@@ -240,7 +267,7 @@ class PeripheralConformanceTest: XCTestCase {
         }
 
         manager = CBMPeripheralManagerFactory.instance(delegate: delegate, queue: nil, forceMock: isMock)
-        wait(for: [finished], timeout: isMock ? 20 : 180)
+        wait(for: [finished], timeout: isMock ? 30 : 180)
         // Let the remaining events (e.g. disconnection) arrive.
         let settle = expectation(description: "Settle")
         settle.isInverted = true
@@ -272,11 +299,18 @@ class PeripheralConformanceTest: XCTestCase {
         XCTAssertTrue(events[subscribed].contains("maximumUpdateValueLength>=20=true"))
         let unsubscribed = try XCTUnwrap(index(of: "didUnsubscribeFrom \(Self.notifyUUID)"))
         XCTAssertGreaterThan(unsubscribed, subscribed)
-        XCTAssertEqual(events.filter { $0.hasPrefix("updateValue") && $0.hasSuffix("true") }.count, 3)
+        // The transmit queue accepts at least one update, and then tells when it is full.
+        // How many updates it takes depends on the implementation and is only logged.
+        let batches = events.filter { $0.hasPrefix("updateValue size=") }
+        XCTAssertFalse(batches.isEmpty)
+        XCTAssertFalse(batches.contains { $0.contains("accepted=0 ") })
+        XCTAssertTrue(batches.first?.hasSuffix("queueFull=true") ?? false, "\(batches)")
+        XCTAssertNotNil(index(of: "isReadyToUpdateSubscribers"))
 
         if isMock {
             // Observations of the simulated central.
-            XCTAssertEqual(script?.notificationLengths, [20, 20, 20])
+            XCTAssertFalse(script?.notificationLengths.isEmpty ?? true)
+            XCTAssertTrue(script?.notificationLengths.allSatisfy { $0 == 20 } ?? false)
             XCTAssertEqual(script?.log.contains("write read -> error 3"), true, "\(script?.log ?? [])")
         }
     }
@@ -350,7 +384,7 @@ private final class MockCentralScript: CBMCentralSpecDelegate {
     private func step3() {
         let notify = characteristics[PeripheralConformanceTest.notifyUUID]!
         central.simulateSubscription(to: notify)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) { [self] in
             central.simulateUnsubscription(from: notify)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [self] in
                 central.simulateWriteRequest(Data([1]), for: characteristics[PeripheralConformanceTest.doneUUID]!) { [self] result in

@@ -96,7 +96,7 @@ final class Runner: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
                 after(0.5) { self.next() }
             },
             { [self] in peripheral.setNotifyValue(true, for: characteristics[notifyUUID]!) },
-            { [self] in after(2.0) { self.next() } },
+            { [self] in after(9.0) { self.next() } },
             { [self] in peripheral.setNotifyValue(false, for: characteristics[notifyUUID]!) },
             { [self] in after(0.5) { self.next() } },
             { [self] in writeChar(doneUUID, Data([1]), "done") },

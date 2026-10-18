@@ -23,7 +23,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>NSBluetoothAlwaysUsageDescription</key><string>Plays the central role in the peripheral conformance tests.</string>
 </dict></plist>
 PLIST
-codesign --force --sign - "$APP"
+# A stable signing identity keeps the Bluetooth permission across rebuilds. With the ad-hoc
+# identity ("-") macOS asks for the permission again after every build.
+IDENTITY="${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | grep -m1 "Apple Development" | sed 's/.*"\(.*\)"/\1/')}"
+codesign --force --sign "${IDENTITY:--}" "$APP"
 rm -f "$OUT/central.log"
 open -W -n --stdout "$OUT/central.log" --stderr "$OUT/central.log" "$APP" --args $2
 cat "$OUT/central.log"
