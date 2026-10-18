@@ -42,10 +42,28 @@ open class CBMPeripheralManagerMock: CBMPeripheralManager {
     private static var centrals: [WeakRef<CBMCentralSpec>] = []
     private static let mutex: DispatchQueue = DispatchQueue(label: "Mutex")
 
-    /// Size of the transmit queue for notifications and indications.
-    /// Only this many updates can be sent without waiting for
+    /// The default size of the transmit queue, see ``transmitQueueSize``.
+    ///
+    /// On an iPhone 13 (iOS 26.6) sending to a Mac, the native queue accepted a single update
+    /// at a time, whatever its size, and then reported to be ready again.
+    public static let defaultTransmitQueueSize = 1
+
+    private var _transmitQueueSize = CBMPeripheralManagerMock.defaultTransmitQueueSize
+    /// The size of the transmit queue for notifications and indications.
+    ///
+    /// Only this many updates can be sent using
+    /// ``updateValue(_:for:onSubscribedCentrals:)`` without waiting for
     /// ``CBMPeripheralManagerDelegate/peripheralManagerIsReady(toUpdateSubscribers:)``.
-    private static let updateQueueSize = 20
+    /// After that, the method returns `false` until the queue has been sent.
+    ///
+    /// The size of the native queue depends on the device, the connected central and the
+    /// connection parameters. Set a larger value to simulate a controller that buffers more,
+    /// or keep the default to make sure that the app handles a full queue. Defaults to
+    /// ``defaultTransmitQueueSize``. Values lower than 1 are ignored.
+    public var transmitQueueSize: Int {
+        get { return mutex.sync { _transmitQueueSize } }
+        set { mutex.sync { _transmitQueueSize = max(1, newValue) } }
+    }
 
     /// The dispatch queue used for all delegate callbacks.
     internal let queue: DispatchQueue
@@ -340,7 +358,7 @@ open class CBMPeripheralManagerMock: CBMPeripheralManager {
 
         // Emulate the limited size of the transmit queue.
         let accepted: Bool = mutex.sync {
-            guard pendingUpdates < CBMPeripheralManagerMock.updateQueueSize else {
+            guard pendingUpdates < _transmitQueueSize else {
                 readyNotificationPending = true
                 return false
             }
@@ -375,7 +393,7 @@ open class CBMPeripheralManagerMock: CBMPeripheralManager {
             let ready: Bool = self.mutex.sync {
                 self.pendingUpdates -= 1
                 guard self.readyNotificationPending,
-                      self.pendingUpdates < CBMPeripheralManagerMock.updateQueueSize else {
+                      self.pendingUpdates < self._transmitQueueSize else {
                     return false
                 }
                 self.readyNotificationPending = false
