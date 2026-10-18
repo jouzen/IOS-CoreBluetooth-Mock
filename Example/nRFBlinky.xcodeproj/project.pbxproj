@@ -17,6 +17,7 @@
 		7E5A01010000000000000B01 /* CentralManagerBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A00010000000000000A01 /* CentralManagerBehaviorTest.swift */; };
 		7E5A01020000000000000B02 /* PeripheralBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A00020000000000000A02 /* PeripheralBehaviorTest.swift */; };
 		7E5A0103000000000000000B /* PeripheralManagerBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0003000000000000000A /* PeripheralManagerBehaviorTest.swift */; };
+		7E5A0106000000000000000B /* PeripheralConformanceTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0006000000000000000A /* PeripheralConformanceTest.swift */; };
 		7E5A0105000000000000000B /* CentralConformanceTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0005000000000000000A /* CentralConformanceTest.swift */; };
 		7E5A0104000000000000000B /* CentralManagerAdvancedBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0004000000000000000A /* CentralManagerAdvancedBehaviorTest.swift */; };
 		52991CE726C26CE90029CD9E /* RetrievingDevicesTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52991CE626C26CE90029CD9E /* RetrievingDevicesTest.swift */; };
@@ -81,6 +82,7 @@
 		7E5A00010000000000000A01 /* CentralManagerBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralManagerBehaviorTest.swift; sourceTree = "<group>"; };
 		7E5A00020000000000000A02 /* PeripheralBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralBehaviorTest.swift; sourceTree = "<group>"; };
 		7E5A0003000000000000000A /* PeripheralManagerBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralManagerBehaviorTest.swift; sourceTree = "<group>"; };
+		7E5A0006000000000000000A /* PeripheralConformanceTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralConformanceTest.swift; sourceTree = "<group>"; };
 		7E5A0005000000000000000A /* CentralConformanceTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralConformanceTest.swift; sourceTree = "<group>"; };
 		7E5A0004000000000000000A /* CentralManagerAdvancedBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralManagerAdvancedBehaviorTest.swift; sourceTree = "<group>"; };
 		52991CE626C26CE90029CD9E /* RetrievingDevicesTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetrievingDevicesTest.swift; sourceTree = "<group>"; };
@@ -206,6 +208,7 @@
 				7E5A00010000000000000A01 /* CentralManagerBehaviorTest.swift */,
 				7E5A00020000000000000A02 /* PeripheralBehaviorTest.swift */,
 				7E5A0003000000000000000A /* PeripheralManagerBehaviorTest.swift */,
+				7E5A0006000000000000000A /* PeripheralConformanceTest.swift */,
 				7E5A0005000000000000000A /* CentralConformanceTest.swift */,
 				7E5A0004000000000000000A /* CentralManagerAdvancedBehaviorTest.swift */,
 				52991CE626C26CE90029CD9E /* RetrievingDevicesTest.swift */,
@@ -644,6 +647,7 @@
 				7E5A01010000000000000B01 /* CentralManagerBehaviorTest.swift in Sources */,
 				7E5A01020000000000000B02 /* PeripheralBehaviorTest.swift in Sources */,
 				7E5A0103000000000000000B /* PeripheralManagerBehaviorTest.swift in Sources */,
+				7E5A0106000000000000000B /* PeripheralConformanceTest.swift in Sources */,
 				7E5A0105000000000000000B /* CentralConformanceTest.swift in Sources */,
 				7E5A0104000000000000000B /* CentralManagerAdvancedBehaviorTest.swift in Sources */,
 				52991CE726C26CE90029CD9E /* RetrievingDevicesTest.swift in Sources */,
