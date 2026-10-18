@@ -374,24 +374,58 @@ class PeripheralManagerBehaviorTest: XCTestCase {
         XCTAssertTrue(centralDelegate.updates.isEmpty)
     }
 
-    func testFullTransmitQueueIsReportedAndReadyCallbackFollows() {
+    func testTransmitQueueAcceptsOneUpdateByDefault() {
         subscribe()
-        var accepted = 0
-        for _ in 0..<100 {
-            guard manager.updateValue(Data([0x01]), for: notifyCharacteristic,
-                                      onSubscribedCentrals: nil) else {
-                break
-            }
-            accepted += 1
-        }
-        XCTAssertGreaterThan(accepted, 0)
-        XCTAssertLessThan(accepted, 100, "The transmit queue should have filled up")
+        XCTAssertEqual(manager.transmitQueueSize, CBMPeripheralManagerMock.defaultTransmitQueueSize)
+        XCTAssertEqual(manager.transmitQueueSize, 1)
+
+        XCTAssertTrue(manager.updateValue(Data([0x01]), for: notifyCharacteristic,
+                                          onSubscribedCentrals: nil))
+        // The queue is full until the update has been sent.
+        XCTAssertFalse(manager.updateValue(Data([0x02]), for: notifyCharacteristic,
+                                           onSubscribedCentrals: nil))
 
         let ready = expectation(description: "Ready to update subscribers")
         delegate.onReady = { ready.fulfill() }
         wait(for: [ready], timeout: 2.0)
-        XCTAssertTrue(manager.updateValue(Data([0x02]), for: notifyCharacteristic,
+        XCTAssertTrue(manager.updateValue(Data([0x03]), for: notifyCharacteristic,
                                           onSubscribedCentrals: nil))
+        // Only the accepted updates were delivered.
+        waitUntil { self.centralDelegate.updates.count == 2 }
+        XCTAssertEqual(centralDelegate.updates, [Data([0x01]), Data([0x03])])
+    }
+
+    func testTransmitQueueSizeIsConfigurable() {
+        subscribe()
+        manager.transmitQueueSize = 5
+
+        var accepted = 0
+        while accepted < 100, manager.updateValue(Data([UInt8(accepted)]), for: notifyCharacteristic,
+                                                  onSubscribedCentrals: nil) {
+            accepted += 1
+        }
+        XCTAssertEqual(accepted, 5)
+
+        let ready = expectation(description: "Ready to update subscribers")
+        delegate.onReady = { ready.fulfill() }
+        wait(for: [ready], timeout: 2.0)
+        waitUntil { self.centralDelegate.updates.count == 5 }
+        XCTAssertEqual(centralDelegate.updates.map { $0[0] }, [0, 1, 2, 3, 4])
+    }
+
+    func testTransmitQueueSizeIsAtLeastOne() {
+        manager.transmitQueueSize = 0
+        XCTAssertEqual(manager.transmitQueueSize, 1)
+    }
+
+    func testReadyCallbackIsNotCalledWhenQueueWasNeverFull() {
+        subscribe()
+        XCTAssertTrue(manager.updateValue(Data([0x01]), for: notifyCharacteristic,
+                                          onSubscribedCentrals: nil))
+        let unexpected = expectation(description: "Not ready callback")
+        unexpected.isInverted = true
+        delegate.onReady = { unexpected.fulfill() }
+        wait(for: [unexpected], timeout: 0.4)
     }
 
     func testRemovingServiceUnsubscribesCentrals() {

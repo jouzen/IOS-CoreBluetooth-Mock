@@ -83,7 +83,10 @@ disconnects or the adapter is turned off before the app responded.
   `alreadyAdvertising` to the delegate.
 * Notifications are sent through a transmit queue of limited size. When
   ``CBMPeripheralManager/updateValue(_:for:onSubscribedCentrals:)`` returns `false`, wait for
-  ``CBMPeripheralManagerDelegate/peripheralManagerIsReady(toUpdateSubscribers:)``.
+  ``CBMPeripheralManagerDelegate/peripheralManagerIsReady(toUpdateSubscribers:)``. The size of the
+  mock's queue is ``CBMPeripheralManagerMock/transmitQueueSize``; it defaults to 1, which is what a
+  native peripheral manager accepted on an iPhone 13 (iOS 26.6) sending to a Mac. Set a larger value
+  to simulate a controller that buffers more updates.
 * Read and write requests are checked against the characteristic's properties and permissions
   before the delegate is called.
 
