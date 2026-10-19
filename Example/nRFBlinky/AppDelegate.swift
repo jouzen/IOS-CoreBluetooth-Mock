@@ -67,7 +67,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     return [
                         // When the app was killed it was scanning with the LBS Service UUID filter.
                         CBMCentralManagerRestoredStateScanServicesKey: [
-                            CBMUUID.nordicBlinkyService
+                            Blinky.serviceUUID
                         ],
                         // Also, the app was scanning with the "Allow Duplicates" option enabled.
                         CBMCentralManagerRestoredStateScanOptionsKey: [

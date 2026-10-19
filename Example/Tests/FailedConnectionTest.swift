@@ -68,7 +68,7 @@ class FailedConnectionTest: XCTestCase {
         var target: BlinkyPeripheral?
         let found = XCTestExpectation(description: "Device found")
         Sim.onBlinkyDiscovery { blinky in
-            XCTAssertEqual(blinky.advertisedName, "nRF Blinky")
+            XCTAssertEqual(blinky.advertisedName, "Nordic_Blinky")
             XCTAssert(blinky.isConnectable == true)
             XCTAssert(blinky.isConnected == false)
             XCTAssertGreaterThanOrEqual(blinky.RSSI.intValue, -40 - 15)
@@ -77,7 +77,7 @@ class FailedConnectionTest: XCTestCase {
             found.fulfill()
         }
         wait(for: [found], timeout: 3)
-        XCTAssertNotNil(target, "nRF Blinky not found. Make sure you run the test on a simulator.")
+        XCTAssertNotNil(target, "Nordic_Blinky not found. Make sure you run the test on a simulator.")
         if target == nil {
             // Going further would cause a crash.
             return
