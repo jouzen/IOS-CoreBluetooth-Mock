@@ -116,6 +116,60 @@ type *https://github.com/nordicsemi/IOS-CoreBluetooth-Mock.git* and set required
   ```
 </details>
 
+## Usage
+
+### Apps acting as a central
+
+Replace `CBCentralManager` with `CBMCentralManager`, and create it using the factory. On a simulator the mock
+implementation is returned and talks to peripherals defined using `CBMPeripheralSpec`:
+
+```swift
+let manager = CBMCentralManagerFactory.instance(delegate: self, queue: nil)
+
+// In tests, before the manager is created:
+let device = CBMPeripheralSpec
+    .simulatePeripheral(proximity: .near)
+    .advertising(
+        advertisementData: [
+            CBMAdvertisementDataLocalNameKey    : "My device",
+            CBMAdvertisementDataServiceUUIDsKey : [myServiceUUID],
+            CBMAdvertisementDataIsConnectable   : true as NSNumber
+        ],
+        withInterval: 0.250)
+    .connectable(name: "My device", services: [myService], delegate: MyDeviceDelegate())
+    .build()
+CBMCentralManagerMock.simulatePeripherals([device])
+CBMCentralManagerMock.simulateInitialState(.poweredOn)
+```
+
+### Apps acting as a peripheral
+
+Replace `CBPeripheralManager` with `CBMPeripheralManager`, and `CBMutableService`, `CBMutableCharacteristic` and 
+`CBMutableDescriptor` with their `CBM...` counterparts. Create the manager using the factory:
+
+```swift
+let manager = CBMPeripheralManagerFactory.instance(delegate: self, queue: nil)
+```
+
+On a simulator the mock implementation is returned. It interacts with mock centrals defined using `CBMCentralSpec`, 
+which scan, connect, read, write and subscribe to the characteristics published by the app, and receive notifications:
+
+```swift
+// In tests:
+CBMCentralManagerMock.simulateInitialState(.poweredOn)   // the Bluetooth adapter is shared with the central role
+
+let central = CBMCentralSpec(maximumUpdateValueLength: 20, delegate: self)
+central.simulateConnection()
+let characteristics = central.simulateCharacteristicDiscovery(forService: myServiceUUID)
+central.simulateSubscription(to: characteristics[0])
+central.simulateReadRequest(for: characteristics[1]) { result in /* ... */ }
+```
+
+Not simulated: L2CAP channels and connection events (the delegate is told that the operation is not supported), 
+prepared writes, and advertisement data other than the local name and service UUIDs.
+See [Mocking centrals](https://nordicsemi.github.io/IOS-CoreBluetooth-Mock/documentation/corebluetoothmock/mocking-centrals) 
+for details.
+
 ## Documentation
 
 The documentation of the library is available [here](https://nordicsemi.github.io/IOS-CoreBluetooth-Mock/documentation/corebluetoothmock).
