@@ -54,7 +54,7 @@ public class CBMCentralSpec {
     /// Requests and updates are delivered a connection interval later.
     public let connectionInterval: TimeInterval
     /// The time after which a read or write request, which was not responded to by the
-    /// peripheral manager, fails with ``CBMError/Code/connectionTimeout``.
+    /// peripheral manager, fails with `CBMError.Code.connectionTimeout`.
     ///
     /// The ATT transaction timeout is 30 seconds.
     public let attributeProtocolTimeout: TimeInterval
