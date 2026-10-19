@@ -80,8 +80,8 @@ extension XCTestCase {
     /// starts would prevent the scanner from restarting scanning, as it does that
     /// when it appears.
     func returnToScanner() {
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let navigationController = appDelegate.window!.rootViewController as! UINavigationController
+        let windowScene = UIApplication.shared.connectedScenes.first as! UIWindowScene
+        let navigationController = windowScene.windows.first!.rootViewController as! UINavigationController
         let settled = XCTestExpectation(description: "Scanner is visible")
         let timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
             if navigationController.transitionCoordinator != nil {
