@@ -53,13 +53,11 @@ public protocol BlinkyDelegate: AnyObject {
 
 /// A sample ``BlinkyDelegate`` that will periodically simulate button presses when a client is
 /// subscribed to button notifications.
-public class PeriodicBlinkyDelegate: BlinkyDelegate {
+open class PeriodicBlinkyDelegate: BlinkyDelegate {
     /// The timer used to schedule periodic simulated button presses. Kept `nil` when not active.
     private var timer: DispatchSourceTimer?
 
-    /// An period of time between simulated button presses.
-    ///
-    /// Defaults to 1 second.
+    /// The period of time between simulated button presses.
     private let period: TimeInterval
     /// The time the button will be in *pressed* state.
     private let pressedDuration: TimeInterval
@@ -78,13 +76,13 @@ public class PeriodicBlinkyDelegate: BlinkyDelegate {
         self.pressedDuration = pressedDuration
     }
     
-    public func blinky(_ blinky: Blinky, didChangeLedState isOn: Bool) {
+    open func blinky(_ blinky: Blinky, didChangeLedState isOn: Bool) {
         // No Op.
     }
     
-    public func blinky(_ blinky: Blinky, didChangeButtonSubscriptionState isSubscribed: Bool) {
+    open func blinky(_ blinky: Blinky, didChangeButtonSubscriptionState isSubscribed: Bool) {
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
             if isSubscribed {
                 self.startTimer(for: blinky)
             } else {
@@ -101,12 +99,12 @@ public class PeriodicBlinkyDelegate: BlinkyDelegate {
         // First fire after `period`, then repeat every `period`.
         t.schedule(deadline: .now() + period, repeating: period)
         t.setEventHandler { [weak self, weak blinky] in
-            guard let self = self, let blinky = blinky, self.timer != nil else { return }
+            guard let self, let blinky, self.timer != nil else { return }
             // Simulate button press.
             blinky.simulateButtonToggle()
             // Schedule release after pressDuration.
             DispatchQueue.main.asyncAfter(deadline: .now() + self.pressedDuration) { [weak self, weak blinky] in
-                guard let self = self, let blinky = blinky, self.timer != nil else { return }
+                guard let self, let blinky, self.timer != nil else { return }
                 blinky.simulateButtonToggle()
             }
         }
@@ -115,10 +113,10 @@ public class PeriodicBlinkyDelegate: BlinkyDelegate {
     }
     
     private func stopTimer() {
-        guard let t = timer else { return }
-        t.setEventHandler {}
-        t.cancel()
-        timer = nil
+        defer { timer = nil }
+        guard let timer else { return }
+        timer.setEventHandler {}
+        timer.cancel()
     }
 }
 
@@ -139,7 +137,7 @@ public class PeriodicBlinkyDelegate: BlinkyDelegate {
 /// which will reset the LED state to the initial value and terminate existing connection.
 ///
 /// - seeAlso: ``simulateButtonToggle()``, ``simulateReset()``, ``BlinkyDelegate``
-public class Blinky {
+open class Blinky {
     public static let serviceUUID = CBMUUID.ledButtonService
     
     /// The peripheral specification that defines the behavior of this Blinky peripheral.
@@ -151,6 +149,8 @@ public class Blinky {
     private let name: String
     /// The implementation of the Blinky peripheral's behavior, handling read/write requests and notifications.
     private let impl: BlinkyImpl
+    /// The delegate receiving LED state updates and button subscription changes. Not retained.
+    private weak var delegate: BlinkyDelegate?
     
     // MARK: init
     
@@ -170,8 +170,10 @@ public class Blinky {
                 name: String = "Nordic_Blinky",
                 proximity: CBMProximity = .immediate,
                 delegate: BlinkyDelegate? = nil) {
+        let impl = BlinkyImpl()
         self.name = name
-        self.impl = BlinkyImpl()
+        self.delegate = delegate
+        self.impl = impl
         self.spec = CBMPeripheralSpec
             .simulatePeripheral(identifier: identifier, proximity: proximity)
             .advertising(
@@ -188,37 +190,52 @@ public class Blinky {
                 name: name,
                 services: [.blinkyService],
                 delegate: impl,
-                connectionInterval: 0.02,
+                connectionInterval: 0.02
             )
             .build()
         
         // Handle state changes.
-        weak let userDelegate = delegate
-        impl.ledStateDidChange = { [weak self, userDelegate] isOn in
-            DispatchQueue.main.async { [weak self, userDelegate] in
-                guard let self = self else { return }
-                userDelegate?.blinky(self, didChangeLedState: isOn)
-            }
-        }
-        impl.buttonSubscriptionStateDidChange = { [weak self, userDelegate] isSubscribed in
-            DispatchQueue.main.async { [weak self, userDelegate] in
-                guard let self = self else { return }
-                userDelegate?.blinky(self, didChangeButtonSubscriptionState: isSubscribed)
-            }
-        }
+        impl.delegate = self
     }
     
     /// Simulates a button toggle.
     ///
     /// This will send a notification to the subscribed client.
-    public func simulateButtonToggle() {
+    open func simulateButtonToggle() {
         impl.isButtonPressed.toggle()
         spec.simulateValueUpdate(impl.isButtonPressed.data, for: .buttonCharacteristic)
     }
     
     /// Simulates a peripheral reset, which will disconnect all connected centrals and stop advertising.
-    public func simulateReset() {
+    open func simulateReset() {
         spec.simulateReset()
+    }
+}
+
+// MARK: - BlinkyImplDelegate
+
+/// The interface between ``Blinky`` and its implementation of the peripheral spec.
+///
+/// It keeps the implementation, and the callbacks it makes, private to the library.
+private protocol BlinkyImplDelegate: AnyObject {
+    func blinkyImpl(didChangeLedState isOn: Bool)
+    func blinkyImpl(didChangeButtonSubscriptionState isSubscribed: Bool)
+}
+
+extension Blinky: BlinkyImplDelegate {
+    
+    fileprivate func blinkyImpl(didChangeLedState isOn: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            delegate?.blinky(self, didChangeLedState: isOn)
+        }
+    }
+    
+    fileprivate func blinkyImpl(didChangeButtonSubscriptionState isSubscribed: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            delegate?.blinky(self, didChangeButtonSubscriptionState: isSubscribed)
+        }
     }
 }
 
@@ -228,8 +245,7 @@ private class BlinkyImpl: CBMPeripheralSpecDelegate {
     
     // MARK: Properties
     
-    var ledStateDidChange: ((Bool) -> ())!
-    var buttonSubscriptionStateDidChange: ((Bool) -> ())!
+    weak var delegate: BlinkyImplDelegate?
     
     var isLedOn: Bool = false
     var isButtonPressed: Bool = false
@@ -254,7 +270,7 @@ private class BlinkyImpl: CBMPeripheralSpecDelegate {
         switch characteristic.uuid {
         case .ledCharacteristic:
             isLedOn = data.bool
-            ledStateDidChange(isLedOn)
+            delegate?.blinkyImpl(didChangeLedState: isLedOn)
             return .success(())
         default:
             return .failure(CBMATTError(.writeNotPermitted))
@@ -266,7 +282,7 @@ private class BlinkyImpl: CBMPeripheralSpecDelegate {
                            for characteristic: CBMCharacteristicMock) -> Result<Void, Error> {
         switch characteristic.uuid {
         case .buttonCharacteristic:
-            buttonSubscriptionStateDidChange(enabled)
+            delegate?.blinkyImpl(didChangeButtonSubscriptionState: enabled)
             return .success(())
         default:
             return .failure(CBMATTError(.requestNotSupported))
@@ -275,7 +291,7 @@ private class BlinkyImpl: CBMPeripheralSpecDelegate {
     
     public func peripheral(_ peripheral: CBMPeripheralSpec,
                            didDisconnect error: Error?) {
-        buttonSubscriptionStateDidChange(false)
+        delegate?.blinkyImpl(didChangeButtonSubscriptionState: false)
     }
     
     func reset() {

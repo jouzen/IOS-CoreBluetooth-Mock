@@ -41,7 +41,7 @@ import CoreBluetoothMock
 /// ```swift
 /// blinkyImpl.simulateButtonToggle()
 /// ```
-private let blinkyImpl = Blinky(
+let blinkyImpl = Blinky(
 //    identifier: UUID(),
 //    name: "Nordic_Blinky",
 //    proximity: .immediate,
@@ -53,11 +53,7 @@ private let blinkyImpl = Blinky(
 
 /// The *Blinky* spec peripheral is used for mock Central Manager.
 ///
-/// This is how you may simulate Button click using a mock Blinky:
-///
-/// ```swift
-/// blinky.simulateValueUpdate(Data([0x01]), for: .buttonCharacteristic)
-/// ```
+/// Use ``blinkyImpl`` to simulate Button clicks.
 let blinky = blinkyImpl.spec
 
 // MARK: - Mock Nordic HRM

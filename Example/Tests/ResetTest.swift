@@ -67,7 +67,7 @@ class ResetTest: XCTestCase {
         var target: BlinkyPeripheral?
         let found = XCTestExpectation(description: "Device found")
         Sim.onBlinkyDiscovery { blinky in
-            XCTAssertEqual(blinky.advertisedName, "nRF Blinky")
+            XCTAssertEqual(blinky.advertisedName, "Nordic_Blinky")
             XCTAssert(blinky.isConnectable == true)
             XCTAssert(blinky.isConnected == false)
             XCTAssertGreaterThanOrEqual(blinky.RSSI.intValue, -100 - 15)
@@ -76,7 +76,7 @@ class ResetTest: XCTestCase {
             found.fulfill()
         }
         wait(for: [found], timeout: 3)
-        XCTAssertNotNil(target, "nRF Blinky not found. Make sure you run the test on a simulator.")
+        XCTAssertNotNil(target, "Nordic_Blinky not found. Make sure you run the test on a simulator.")
         if target == nil {
             // Going further would cause a crash.
             return
@@ -106,8 +106,9 @@ class ResetTest: XCTestCase {
         // Initially, LED is OFF and button is released.
         let ledDisabled = XCTestExpectation(description: "LED Disabled")
         let buttonReleased = XCTestExpectation(description: "Button released")
-        let buttonPressed = XCTestExpectation(description: "Button pressed")
-        buttonPressed.isInverted = true
+        // Set to true when the device was reset, and when the app was notified about the disconnection.
+        var deviceWasReset = false
+        var disconnectionReported = false
 
         let ledObserver = target!.onLedStateDidChange { isOn in
             if isOn == false {
@@ -116,7 +117,10 @@ class ResetTest: XCTestCase {
         }
         let buttonObserver = target!.onButtonStateDidChange { isPressed in
             if isPressed == true {
-                buttonPressed.fulfill()
+                // The button was pressed after the device had been reset, so the
+                // notification can not be delivered. The state of the button is
+                // preserved by the device, and read after the app reconnects.
+                XCTAssertFalse(deviceWasReset && !disconnectionReported, "Notification received from a device that was reset")
             } else {
                 buttonReleased.fulfill()
             }
@@ -127,15 +131,20 @@ class ResetTest: XCTestCase {
         let reset = XCTestExpectation(description: "Reset")
         let disconnectionObserver = target!.onDisconnected { error in
             XCTAssertEqual((error as? CBMError)?.code, CBError.connectionTimeout)
+            disconnectionReported = true
             reset.fulfill()
         }
         blinky.simulateReset()
-        blinky.simulateValueUpdate(Data([0x01]), for: .buttonCharacteristic)
-        wait(for: [reset, buttonPressed], timeout: 5)
+        deviceWasReset = true
+        blinkyImpl.simulateButtonToggle()
+        wait(for: [reset], timeout: 5)
         Sim.dispose(disconnectionObserver)
 
         Sim.dispose(ledObserver)
         Sim.dispose(buttonObserver)
+        // The button stays pressed after a reset. Release it, so that the next test
+        // starts with the button released.
+        blinkyImpl.simulateButtonToggle()
         returnToScanner()
     }
 
