@@ -52,6 +52,12 @@ open class CBMCentralManagerMock: CBMCentralManager {
     private static var previewPeripherals: Set<CBMPeripheralPreview> = Set()
     /// A map of all current advertisements of all simulated peripherals.
     private static var advertisementTimers = CBMDictionary<CBMAdvertisementConfig, Timer>()
+    /// Advertisements that were started, but whose timers have not been created yet.
+    ///
+    /// Timers are created on the main queue. Stopping an advertisement removes its token,
+    /// so that a timer that was queued earlier is not created after the advertisement
+    /// has been stopped. Must be accessed on the ``mutex``.
+    private static var pendingAdvertisements = CBMDictionary<CBMAdvertisementConfig, UUID>()
     /// A mutex queue for managing managers.
     private static let mutex: DispatchQueue = DispatchQueue(label: "Mutex")
     /// The value of current authorization status for using Bluetooth.
@@ -122,6 +128,9 @@ open class CBMCentralManagerMock: CBMCentralManager {
     
     /// Stops all advertising.
     private static func stopAdvertising() {
+        mutex.sync {
+            pendingAdvertisements.removeAll()
+        }
         advertisementTimers.forEach { $0.value.invalidate() }
         advertisementTimers.removeAll()
     }
@@ -140,8 +149,23 @@ open class CBMCentralManagerMock: CBMCentralManager {
         guard config.delay > 0 || config.interval > 0 else {
             return
         }
+        let token = UUID()
+        mutex.sync {
+            pendingAdvertisements[config] = token
+        }
         // Timer works only on queues with a active run loop.
         DispatchQueue.main.async {
+            // The advertisement could have been stopped, or replaced, in the meantime.
+            let isCurrent = mutex.sync { () -> Bool in
+                guard pendingAdvertisements[config] == token else {
+                    return false
+                }
+                pendingAdvertisements.removeValue(forKey: config)
+                return true
+            }
+            guard isCurrent else {
+                return
+            }
             // If the first advertising is to be delayed, create a
             // temporary timer that will call the initial data.
             if config.delay > 0 {
@@ -166,6 +190,9 @@ open class CBMCentralManagerMock: CBMCentralManager {
     /// - Parameter mock: The mock peripheral that changed advertising set.
     private static func stopAdvertising(of mock: CBMPeripheralSpec) {
         mock.advertisement?.forEach { config in
+            mutex.sync {
+                _ = pendingAdvertisements.removeValue(forKey: config)
+            }
             advertisementTimers
                 .removeValue(forKey: config)?
                 .invalidate()

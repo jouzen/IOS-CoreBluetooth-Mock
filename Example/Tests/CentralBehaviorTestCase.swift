@@ -79,7 +79,7 @@ final class TestDevice: CBMPeripheralSpecDelegate {
     let notifyCharacteristic: CBMCharacteristicMock
     let otherCharacteristic: CBMCharacteristicMock
 
-    init(mtu: Int = 23, proximity: CBMProximity = .immediate) {
+    init(mtu: Int = 23, proximity: CBMProximity = .immediate, advertisedName: String = TestDevice.name) {
         readCharacteristic = CBMCharacteristicMock(
             type: TestDevice.readChar, properties: [.read],
             descriptors: CBMDescriptorMock(type: TestDevice.userDescription))
@@ -101,7 +101,7 @@ final class TestDevice: CBMPeripheralSpecDelegate {
             .simulatePeripheral(identifier: identifier, proximity: proximity)
             .advertising(
                 advertisementData: [
-                    CBMAdvertisementDataLocalNameKey: TestDevice.name,
+                    CBMAdvertisementDataLocalNameKey: advertisedName,
                     CBMAdvertisementDataServiceUUIDsKey: [TestDevice.serviceA],
                     CBMAdvertisementDataIsConnectable: true as NSNumber
                 ],

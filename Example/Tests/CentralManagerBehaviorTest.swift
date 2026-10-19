@@ -254,6 +254,56 @@ class CentralManagerBehaviorTest: CentralBehaviorTestCase {
         }
     }
 
+    // MARK: - Replacing advertisements
+
+    /// Creates a manager when the adapter is on, and returns the names advertised
+    /// in the given time, scanning with duplicates allowed.
+    private func advertisedNames(whileScanningFor interval: TimeInterval) -> Set<String> {
+        waitFor("Manager ready") { ready in
+            managerDelegate.didUpdateState = { _ in ready.fulfill() }
+            manager = CBMCentralManagerMock(delegate: managerDelegate, queue: nil)
+        }
+        var names: Set<String> = []
+        managerDelegate.didDiscoverPeripheral = { _, _, data, _ in
+            if let name = data[CBMAdvertisementDataLocalNameKey] as? String {
+                names.insert(name)
+            }
+        }
+        manager.scanForPeripherals(withServices: nil,
+                                   options: [CBMCentralManagerScanOptionAllowDuplicatesKey: true])
+        pause(interval)
+        manager.stopScan()
+        return names
+    }
+
+    func testReplacingSimulatedPeripheralsStopsTheirAdvertising() {
+        CBMCentralManagerMock.simulatePowerOff()
+        let first = TestDevice(advertisedName: "First")
+        let second = TestDevice(advertisedName: "Second")
+        // The second call comes right after the first one, before the advertising
+        // of the first set could have been started.
+        CBMCentralManagerMock.simulatePeripherals([first.spec])
+        CBMCentralManagerMock.simulatePeripherals([second.spec])
+        CBMCentralManagerMock.simulateInitialState(.poweredOn)
+
+        XCTAssertEqual(advertisedNames(whileScanningFor: 0.6), ["Second"])
+    }
+
+    func testChangingAdvertisementReplacesThePreviousOne() {
+        setUpManager()
+        let advertisement: (String) -> CBMAdvertisementConfig = { name in
+            CBMAdvertisementConfig(data: [CBMAdvertisementDataLocalNameKey: name,
+                                          CBMAdvertisementDataIsConnectable: true as NSNumber],
+                                   interval: 0.05, delay: 0, isAdvertisingWhenConnected: false)
+        }
+        // Both changes are made at once.
+        device.spec.simulateAdvertisementChange([advertisement("Old")])
+        device.spec.simulateAdvertisementChange([advertisement("New")])
+
+        let names = advertisedNames(whileScanningFor: 0.6)
+        XCTAssertEqual(names, ["New"])
+    }
+
     // MARK: - Connecting
 
     func testConnect() throws {
