@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'CoreBluetoothMock'
-  s.version          = '1.0.6'
+  s.version          = '1.1.0'
   s.summary          = 'Mocking library for CoreBluetooth.'
 
   s.description      = <<-DESC
@@ -18,7 +18,7 @@ device and test the app on simulator.
   s.ios.deployment_target = '12.0'
   s.osx.deployment_target = '10.14'
   s.tvos.deployment_target = '12.0'
-  s.watchos.deployment_target = '4.0'
+  s.watchos.deployment_target = '9.0'
 
   s.source_files = 'CoreBluetoothMock/**/*'
   s.resource_bundles = {

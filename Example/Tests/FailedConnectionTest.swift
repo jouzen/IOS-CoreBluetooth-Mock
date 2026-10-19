@@ -53,7 +53,7 @@ class FailedConnectionTest: XCTestCase {
         // That would invalidate the BlinkyManager in ScannerTableViewController.
         // The central manager must be reused, so let's just power mock off,
         // which will allow us to set different set of peripherals in another test.
-        CBMCentralManagerMock.simulatePowerOff()
+        powerOffAndSettle()
     }
 
     func testScanningBlinky() {
@@ -99,8 +99,6 @@ class FailedConnectionTest: XCTestCase {
         wait(for: [connected], timeout: 3)
         Sim.dispose(connectionObserver)
 
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let navigationController = appDelegate.window!.rootViewController as! UINavigationController
-        navigationController.popViewController(animated: true)
+        returnToScanner()
     }
 }

@@ -52,6 +52,12 @@ open class CBMCentralManagerMock: CBMCentralManager {
     private static var previewPeripherals: Set<CBMPeripheralPreview> = Set()
     /// A map of all current advertisements of all simulated peripherals.
     private static var advertisementTimers = CBMDictionary<CBMAdvertisementConfig, Timer>()
+    /// Advertisements that were started, but whose timers have not been created yet.
+    ///
+    /// Timers are created on the main queue. Stopping an advertisement removes its token,
+    /// so that a timer that was queued earlier is not created after the advertisement
+    /// has been stopped. Must be accessed on the ``mutex``.
+    private static var pendingAdvertisements = CBMDictionary<CBMAdvertisementConfig, UUID>()
     /// A mutex queue for managing managers.
     private static let mutex: DispatchQueue = DispatchQueue(label: "Mutex")
     /// The value of current authorization status for using Bluetooth.
@@ -72,12 +78,17 @@ open class CBMCentralManagerMock: CBMCentralManager {
     internal private(set) static var rssiDeviation: CBMProximity.Deviation = .default
     
     /// The global state of the Bluetooth adapter on the device.
-    fileprivate private(set) static var managerState: CBMManagerState = .poweredOff {
+    ///
+    /// The state is shared between ``CBMCentralManagerMock`` and ``CBMPeripheralManagerMock``
+    /// instances, as both use the same Bluetooth adapter.
+    internal private(set) static var managerState: CBMManagerState = .poweredOff {
         didSet {
             notifyManagers()
         }
     }
     private static func notifyManagers() {
+        // Peripheral managers share the same Bluetooth adapter.
+        CBMPeripheralManagerMock.notifyManagers()
         // For all existing managers...
         let existingManagers = mutex.sync {
             managers.compactMap { $0.ref }
@@ -117,6 +128,9 @@ open class CBMCentralManagerMock: CBMCentralManager {
     
     /// Stops all advertising.
     private static func stopAdvertising() {
+        mutex.sync {
+            pendingAdvertisements.removeAll()
+        }
         advertisementTimers.forEach { $0.value.invalidate() }
         advertisementTimers.removeAll()
     }
@@ -135,8 +149,23 @@ open class CBMCentralManagerMock: CBMCentralManager {
         guard config.delay > 0 || config.interval > 0 else {
             return
         }
+        let token = UUID()
+        mutex.sync {
+            pendingAdvertisements[config] = token
+        }
         // Timer works only on queues with a active run loop.
         DispatchQueue.main.async {
+            // The advertisement could have been stopped, or replaced, in the meantime.
+            let isCurrent = mutex.sync { () -> Bool in
+                guard pendingAdvertisements[config] == token else {
+                    return false
+                }
+                pendingAdvertisements.removeValue(forKey: config)
+                return true
+            }
+            guard isCurrent else {
+                return
+            }
             // If the first advertising is to be delayed, create a
             // temporary timer that will call the initial data.
             if config.delay > 0 {
@@ -161,6 +190,9 @@ open class CBMCentralManagerMock: CBMCentralManager {
     /// - Parameter mock: The mock peripheral that changed advertising set.
     private static func stopAdvertising(of mock: CBMPeripheralSpec) {
         mock.advertisement?.forEach { config in
+            mutex.sync {
+                _ = pendingAdvertisements.removeValue(forKey: config)
+            }
             advertisementTimers
                 .removeValue(forKey: config)?
                 .invalidate()
@@ -271,7 +303,7 @@ open class CBMCentralManagerMock: CBMCentralManager {
     /// If `simulateAuthorization(:)` was not called it is assumed that the
     /// authorization was granted. However, in this case `CBMCentralManager.authorization`
     /// will return the value returned by the native API.
-    private static var isAuthorized: Bool {
+    internal static var isAuthorized: Bool {
         return bluetoothAuthorization == nil || bluetoothAuthorization == 3 // CBManagerAuthorization.allowedAlways
     }
     private var scanFilter: [CBMUUID]?
@@ -371,8 +403,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
         previewPeripherals.insert(peripheral)
     }
     
-    /// Removes all active central manager instances and peripherals from the
-    /// simulation, resetting it to the initial state.
+    /// Removes all active central and peripheral manager instances, peripherals
+    /// and centrals from the simulation, resetting it to the initial state.
     ///
     /// Use this to tear down your mocks between tests, e.g. in `tearDownWithError()`.
     /// All manager delegates will receive a ``CBMManagerState/unknown`` state update.
@@ -385,6 +417,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
         mutex.sync {
             managers.removeAll()
         }
+        // Remove all peripheral manager instances and disconnect mock centrals.
+        CBMPeripheralManagerMock.tearDown()
         // Set the manager state to powered Off.
         managerState = .poweredOff
         // Reset the RSSI deviation to the default
@@ -426,11 +460,11 @@ open class CBMCentralManagerMock: CBMCentralManager {
     public static var simulateFeaturesSupport: ((_ features: CBMCentralManager.Feature) -> Bool)?
     #endif
     
-    /// Sets the initial state of the Bluetooth central manager.
+    /// Sets the initial state of the Bluetooth adapter.
     ///
-    /// This method should only be called ones, before any central manager
-    /// is created. By default, the initial state is ``CBMManagerState/poweredOff``.
-    /// - Parameter state: The initial state of the central manager.
+    /// This method should only be called ones, before any central or peripheral
+    /// manager is created. By default, the initial state is ``CBMManagerState/poweredOff``.
+    /// - Parameter state: The initial state of the central and peripheral managers.
     public static func simulateInitialState(_ state: CBMManagerState) {
         managerState = state
     }
@@ -456,6 +490,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
     }
     
     /// Simulates turning the Bluetooth adapter on.
+    ///
+    /// All central and peripheral managers will be notified about the state change.
     public static func simulatePowerOn() {
         guard managerState != .poweredOn else {
             return
@@ -464,6 +500,9 @@ open class CBMCentralManagerMock: CBMCentralManager {
     }
     
     /// Simulate turning the Bluetooth adapter off.
+    ///
+    /// All central and peripheral managers will be notified about the state change.
+    /// Scanning, advertising and all connections will be terminated.
     public static func simulatePowerOff() {
         guard managerState != .poweredOff else {
             return
@@ -862,7 +901,8 @@ open class CBMCentralManagerMock: CBMCentralManager {
     #if !os(macOS)
     @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     open override func registerForConnectionEvents(options: [CBMConnectionEventMatchingOption : Any]? = nil) {
-        fatalError("Mock connection events are not implemented")
+        // Connection events are not simulated. The delegate will not be notified.
+        NSLog("[CoreBluetoothMock] Connection events are not implemented in the mock.")
     }
     #endif
     
@@ -916,7 +956,7 @@ open class CBMCentralManagerMock: CBMCentralManager {
         return mock.isConnected
     }
     
-    open var delegate: CBMPeripheralDelegate?
+    open weak var delegate: CBMPeripheralDelegate?
     
     open override var identifier: UUID {
         return mock.identifier
@@ -1041,9 +1081,14 @@ open class CBMCentralManagerMock: CBMCentralManager {
         isReconnecting = false
         // Cancel pending connection.
         guard state != .connecting else {
-            state = .disconnected
-            queue.async {
-                completion()
+            // As in the native implementation, the state changes to
+            // `.disconnecting` and the delegate is notified afterwards.
+            state = .disconnecting
+            queue.async { [weak self] in
+                if let self = self, self.state == .disconnecting {
+                    self.state = .disconnected
+                    completion()
+                }
             }
             return
         }
@@ -1188,23 +1233,31 @@ open class CBMCentralManagerMock: CBMCentralManager {
         switch delegate.peripheral(mock,
                                    didReceiveServiceDiscoveryRequest: serviceUUIDs) {
         case .success:
-            services = services ?? []
-            let initialSize = services!.count
-            services = services! + mockServices
+            let discoveredServices = services ?? []
+            let newServices = mockServices
                 // Filter all device services that match given list (if set).
                 .filter { serviceUUIDs == nil || serviceUUIDs!.isEmpty || serviceUUIDs!.contains($0.uuid) }
                 // Filter those of them, that are not already in discovered services.
-                .filter { s in !services!
+                .filter { s in !discoveredServices
                     .contains { ds in s.identifier == ds.identifier }
                 }
                 // Copy the service info, without included services or characteristics.
                 .map { CBMService(shallowCopy: $0, for: self) }
-            let newServicesCount = services!.count - initialSize
             // Service discovery may takes the more time, the more services
             // are discovered.
-            let delay = interval * Double(newServicesCount)
+            let delay = interval * Double(newServices.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The services become available when discovery completes.
+                    let known = self.services ?? []
+                    let added = newServices.filter { s in
+                        !known.contains { $0.identifier == s.identifier }
+                    }
+                    // As in the native implementation, the services stay nil
+                    // when nothing was found.
+                    if !known.isEmpty || !added.isEmpty {
+                        self.services = known + added
+                    }
                     self.delegate?.peripheral(self, didDiscoverServices: nil)
                 }
             }
@@ -1236,24 +1289,29 @@ open class CBMCentralManagerMock: CBMCentralManager {
                                    didReceiveIncludedServiceDiscoveryRequest: includedServiceUUIDs,
                                    for: mockService) {
         case .success:
-            service._includedServices = service._includedServices ?? []
-            let initialSize = service._includedServices!.count
-            service._includedServices = service._includedServices! +
-                mockIncludedServices
-                    // Filter all included service that match given list (if set).
-                    .filter { includedServiceUUIDs == nil || includedServiceUUIDs!.isEmpty || includedServiceUUIDs!.contains($0.uuid) }
-                    // Filter those of them, that are not already in discovered services.
-                    .filter { s in !service._includedServices!
-                        .contains { ds in s.identifier == ds.identifier }
-                    }
-                    // Copy the service info, without included characteristics.
-                    .map { CBMService(shallowCopy: $0, for: self) }
-            let newServicesCount = service._includedServices!.count - initialSize
+            let discovered = service._includedServices ?? []
+            let newServices = mockIncludedServices
+                // Filter all included service that match given list (if set).
+                .filter { includedServiceUUIDs == nil || includedServiceUUIDs!.isEmpty || includedServiceUUIDs!.contains($0.uuid) }
+                // Filter those of them, that are not already in discovered services.
+                .filter { s in !discovered
+                    .contains { ds in s.identifier == ds.identifier }
+                }
+                // Copy the service info, without included characteristics.
+                .map { CBMService(shallowCopy: $0, for: self) }
             // Service discovery may takes the more time, the more services
             // are discovered.
-            let delay = interval * Double(newServicesCount)
+            let delay = interval * Double(newServices.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The services become available when discovery completes.
+                    let known = service._includedServices ?? []
+                    let added = newServices.filter { s in
+                        !known.contains { $0.identifier == s.identifier }
+                    }
+                    if !known.isEmpty || !added.isEmpty {
+                        service._includedServices = known + added
+                    }
                     self.delegate?.peripheral(self,
                                               didDiscoverIncludedServicesFor: service,
                                               error: nil)
@@ -1290,24 +1348,29 @@ open class CBMCentralManagerMock: CBMCentralManager {
                                    didReceiveCharacteristicsDiscoveryRequest: characteristicUUIDs,
                                    for: mockService) {
         case .success:
-            service._characteristics = service._characteristics ?? []
-            let initialSize = service._characteristics!.count
-            service._characteristics = service._characteristics! +
-                mockCharacteristics
-                    // Filter all service characteristics that match given list (if set).
-                    .filter { characteristicUUIDs == nil || characteristicUUIDs!.isEmpty || characteristicUUIDs!.contains($0.uuid) }
-                    // Filter those of them, that are not already in discovered characteristics.
-                    .filter { c in !service._characteristics!
-                        .contains { dc in c.identifier == dc.identifier }
-                    }
-                    // Copy the characteristic info, without included descriptors or value.
-                    .map { CBMCharacteristic(shallowCopy: $0, in: service) }
-            let newCharacteristicsCount = service._characteristics!.count - initialSize
+            let discovered = service._characteristics ?? []
+            let newCharacteristics = mockCharacteristics
+                // Filter all service characteristics that match given list (if set).
+                .filter { characteristicUUIDs == nil || characteristicUUIDs!.isEmpty || characteristicUUIDs!.contains($0.uuid) }
+                // Filter those of them, that are not already in discovered characteristics.
+                .filter { c in !discovered
+                    .contains { dc in c.identifier == dc.identifier }
+                }
+                // Copy the characteristic info, without included descriptors or value.
+                .map { CBMCharacteristic(shallowCopy: $0, in: service) }
             // Characteristics discovery may takes the more time, the more characteristics
             // are discovered.
-            let delay = interval * Double(newCharacteristicsCount)
+            let delay = interval * Double(newCharacteristics.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The characteristics become available when discovery completes.
+                    let known = service._characteristics ?? []
+                    let added = newCharacteristics.filter { c in
+                        !known.contains { $0.identifier == c.identifier }
+                    }
+                    if !known.isEmpty || !added.isEmpty {
+                        service._characteristics = known + added
+                    }
                     self.delegate?.peripheral(self,
                                               didDiscoverCharacteristicsFor: service,
                                               error: nil)
@@ -1342,22 +1405,27 @@ open class CBMCentralManagerMock: CBMCentralManager {
         switch delegate.peripheral(mock,
                                    didReceiveDescriptorsDiscoveryRequestFor: mockCharacteristic) {
         case .success:
-            characteristic._descriptors = characteristic._descriptors ?? []
-            let initialSize = characteristic._descriptors!.count
-            characteristic._descriptors = characteristic._descriptors! +
-                mockDescriptors
-                    // Filter those of them, that are not already in discovered descriptors.
-                    .filter { d in !characteristic._descriptors!
-                        .contains { dd in d.identifier == dd.identifier }
-                    }
-                    // Copy the descriptors info, without the value.
-                    .map { CBMDescriptor(shallowCopy: $0, in: characteristic) }
-            let newDescriptorsCount = characteristic._descriptors!.count - initialSize
+            let discovered = characteristic._descriptors ?? []
+            let newDescriptors = mockDescriptors
+                // Filter those of them, that are not already in discovered descriptors.
+                .filter { d in !discovered
+                    .contains { dd in d.identifier == dd.identifier }
+                }
+                // Copy the descriptors info, without the value.
+                .map { CBMDescriptor(shallowCopy: $0, in: characteristic) }
             // Descriptors discovery may takes the more time, the more descriptors
             // are discovered.
-            let delay = interval * Double(newDescriptorsCount)
+            let delay = interval * Double(newDescriptors.count)
             queue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 if let self = self, self.state == .connected {
+                    // The descriptors become available when discovery completes.
+                    let known = characteristic._descriptors ?? []
+                    let added = newDescriptors.filter { d in
+                        !known.contains { $0.identifier == d.identifier }
+                    }
+                    if !known.isEmpty || !added.isEmpty {
+                        characteristic._descriptors = known + added
+                    }
                     self.delegate?.peripheral(self,
                                               didDiscoverDescriptorsFor: characteristic,
                                               error: nil)
@@ -1492,12 +1560,18 @@ open class CBMCentralManagerMock: CBMCentralManager {
             }
         } else {
             // Decrease buffer.
-            mutex.sync {
+            let hasSpace: Bool = mutex.sync {
                 guard self.availableWriteWithoutResponseBuffer > 0 else {
-                    return
+                    return false
                 }
                 self.availableWriteWithoutResponseBuffer -= 1
                 self._canSendWriteWithoutResponse = false
+                return true
+            }
+            // When the buffer is full, the command is dropped. The app should
+            // wait for `peripheralIsReady(toSendWriteWithoutResponse:)`.
+            guard hasSpace else {
+                return
             }
             
             delegate.peripheral(mock,
@@ -1636,7 +1710,18 @@ open class CBMCentralManagerMock: CBMCentralManager {
     
     @available(iOS 11.0, tvOS 11.0, watchOS 4.0, *)
     open func openL2CAPChannel(_ PSM: CBML2CAPPSM) {
-        fatalError("L2CAP mock is not implemented")
+        // Central manager must be in powered on state.
+        guard manager.ensurePoweredOn() else { return }
+        guard state == .connected else {
+            return
+        }
+        // L2CAP channels are not simulated. Report that the operation is not supported.
+        NSLog("[CoreBluetoothMock] L2CAP channels are not implemented in the mock. Opening channel with PSM \(PSM) failed.")
+        queue.async { [weak self] in
+            if let self = self, self.state == .connected {
+                self.delegate?.peripheral(self, didOpen: nil, error: CBMError(.operationNotSupported))
+            }
+        }
     }
     
     open override var hash: Int {
@@ -1658,10 +1743,10 @@ open class CBMCentralManagerMock: CBMCentralManager {
 
 // MARK: - Helpers
 
-private class WeakRef<T: AnyObject> {
-    fileprivate private(set) weak var ref: T?
-    
-    fileprivate init(_ value: T) {
+internal class WeakRef<T: AnyObject> {
+    internal private(set) weak var ref: T?
+
+    internal init(_ value: T) {
         self.ref = value
     }
 }

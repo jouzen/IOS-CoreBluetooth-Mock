@@ -52,7 +52,7 @@ class ResetTest: XCTestCase {
         // That would invalidate the BlinkyManager in ScannerTableViewController.
         // The central manager must be reused, so let's just power mock off,
         // which will allow us to set different set of peripherals in another test.
-        CBMCentralManagerMock.simulatePowerOff()
+        powerOffAndSettle()
     }
 
     func testScanningBlinky() {
@@ -100,8 +100,8 @@ class ResetTest: XCTestCase {
         target!.dispose(o1)
         target!.dispose(o2)
 
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let navigationController = appDelegate.window!.rootViewController as! UINavigationController
+        let windowScene = UIApplication.shared.connectedScenes.first as! UIWindowScene
+        let navigationController = windowScene.windows.first!.rootViewController as! UINavigationController
 
         // Initially, LED is OFF and button is released.
         let ledDisabled = XCTestExpectation(description: "LED Disabled")
@@ -136,7 +136,7 @@ class ResetTest: XCTestCase {
 
         Sim.dispose(ledObserver)
         Sim.dispose(buttonObserver)
-        navigationController.popViewController(animated: true)
+        returnToScanner()
     }
 
 }

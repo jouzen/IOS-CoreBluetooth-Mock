@@ -31,7 +31,7 @@
 import CoreBluetooth
 
 /// The possible states of a Core Bluetooth manager.
-public enum CBMManagerState: Int {
+public enum CBMManagerState: Int, Sendable {
     /// The manager’s state is unknown.
     case unknown
     /// A state that indicates the connection with the system service was momentarily lost.
@@ -108,6 +108,35 @@ public typealias CBML2CAPChannel = CBL2CAPChannel
 /// The current authorization state of a Core Bluetooth manager.
 @available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
 public typealias CBMManagerAuthorization = CBManagerAuthorization
+/// Values that represent the read, write, and encryption permissions for a characteristic’s value.
+///
+/// Permissions are set on ``CBMMutableCharacteristic`` objects published by a ``CBMPeripheralManager``.
+public typealias CBMAttributePermissions = CBAttributePermissions
+/// Values representing the desired connection latency for a peripheral manager connection.
+public typealias CBMPeripheralManagerConnectionLatency = CBPeripheralManagerConnectionLatency
+
+/// A Boolean value that specifies whether the system warns the user if the app instantiates
+/// the peripheral manager when Bluetooth service isn’t available.
+///
+/// The value for this key is an `NSNumber` object. If the key isn’t specified, the default value is `true`.
+public let CBMPeripheralManagerOptionShowPowerAlertKey = CBPeripheralManagerOptionShowPowerAlertKey
+/// A string containing a unique identifier (UID) for the peripheral manager to instantiate.
+///
+/// The value for this key is an `NSString`. The system uses this UID to identify a specific
+/// peripheral manager. As a result, the UID must remain the same for subsequent executions
+/// of the app to restore the peripheral manager.
+public let CBMPeripheralManagerOptionRestoreIdentifierKey = CBPeripheralManagerOptionRestoreIdentifierKey
+/// An array of services for use when restoring the state of a peripheral manager.
+///
+/// The value associated with this key is an `NSArray` of ``CBMMutableService`` objects.
+/// The array contains all of the services published by the peripheral manager at the time
+/// the system terminated the app.
+public let CBMPeripheralManagerRestoredStateServicesKey = CBPeripheralManagerRestoredStateServicesKey
+/// A dictionary of advertisement data for use when restoring the state of a peripheral manager.
+///
+/// The value associated with this key is an `NSDictionary`. The dictionary contains the data
+/// the peripheral manager was advertising at the time the system terminated the app.
+public let CBMPeripheralManagerRestoredStateAdvertisementDataKey = CBPeripheralManagerRestoredStateAdvertisementDataKey
 
 /// A Boolean value that specifies whether the scan should run without duplicate filtering.
 ///
