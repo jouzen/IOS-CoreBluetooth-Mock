@@ -332,13 +332,13 @@ class PeripheralManagerTest: XCTestCase {
         XCTAssertFalse(central.isConnected)
         wait(until: { self.central.simulateScan() == nil }, description: "Advertising stopped")
 
-        // The service is gone, so requests no longer resolve to a manager.
+        // The service stays published, but nobody can connect while the adapter is off.
         let failed = XCTestExpectation(description: "Read failed")
         central.simulateReadRequest(for: sensor.sensorLocation) { result in
             guard case .failure(let error) = result else {
                 return XCTFail("Read should have failed")
             }
-            XCTAssertEqual((error as? CBMATTError)?.code, .attributeNotFound)
+            XCTAssertEqual((error as? CBMError)?.code, .notConnected)
             failed.fulfill()
         }
         wait(for: [failed], timeout: 1.0)

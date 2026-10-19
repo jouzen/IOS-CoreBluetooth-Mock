@@ -768,12 +768,16 @@ extension CBMPeripheralManagerMock {
     }
 
     /// This method is called when the Bluetooth adapter is turned off.
+    ///
+    /// Advertising is stopped and all centrals are disconnected, but the published services
+    /// stay in the database. This was observed with the native `CBPeripheralManager`: after
+    /// Bluetooth had been turned off and on, adding a service again raised an exception
+    /// ("Services cannot be added more than once").
     private func reset() {
         let abortedRequests: [CBMATTRequestMock] = mutex.sync {
             advertising = false
             advertisementData = nil
             services.forEach { unsubscribeAllCentrals(from: $0) }
-            services.removeAll()
             centrals.removeAll()
             pendingUpdates = 0
             readyNotificationPending = false
