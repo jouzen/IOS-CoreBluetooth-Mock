@@ -53,7 +53,7 @@ class FailedConnectionTest: XCTestCase {
         // That would invalidate the BlinkyManager in ScannerTableViewController.
         // The central manager must be reused, so let's just power mock off,
         // which will allow us to set different set of peripherals in another test.
-        CBMCentralManagerMock.simulatePowerOff()
+        powerOffAndSettle()
     }
 
     func testScanningBlinky() {
@@ -68,16 +68,16 @@ class FailedConnectionTest: XCTestCase {
         var target: BlinkyPeripheral?
         let found = XCTestExpectation(description: "Device found")
         Sim.onBlinkyDiscovery { blinky in
-            XCTAssertEqual(blinky.advertisedName, "nRF Blinky")
+            XCTAssertEqual(blinky.advertisedName, "Nordic_Blinky")
             XCTAssert(blinky.isConnectable == true)
             XCTAssert(blinky.isConnected == false)
-            XCTAssertGreaterThanOrEqual(blinky.RSSI.intValue, -70 - 15)
-            XCTAssertLessThanOrEqual(blinky.RSSI.intValue, -70 + 15)
+            XCTAssertGreaterThanOrEqual(blinky.RSSI.intValue, -40 - 15)
+            XCTAssertLessThanOrEqual(blinky.RSSI.intValue, -40 + 15)
             target = blinky
             found.fulfill()
         }
         wait(for: [found], timeout: 3)
-        XCTAssertNotNil(target, "nRF Blinky not found. Make sure you run the test on a simulator.")
+        XCTAssertNotNil(target, "Nordic_Blinky not found. Make sure you run the test on a simulator.")
         if target == nil {
             // Going further would cause a crash.
             return
@@ -87,19 +87,18 @@ class FailedConnectionTest: XCTestCase {
         blinky.simulateProximityChange(.outOfRange)
         
         // Select found device.
-        Sim.post(.selectPeripheral(at: 0))
+        Sim.post(.selectPeripheral(target!))
 
         // As the device is now out of range, connection should fail.
         let connected = XCTestExpectation(description: "Connected")
         connected.isInverted = true
-        target!.onConnected {
+        let connectionObserver = target!.onConnected {
             connected.fulfill() // This should not happen.
         }
         // As the expectation is inverted, the wait should timeout.
         wait(for: [connected], timeout: 3)
+        Sim.dispose(connectionObserver)
 
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let navigationController = appDelegate.window!.rootViewController as! UINavigationController
-        navigationController.popViewController(animated: true)
+        returnToScanner()
     }
 }

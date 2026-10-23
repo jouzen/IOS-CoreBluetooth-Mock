@@ -28,8 +28,9 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-import Foundation
+import XCTest
 @testable import nRF_Blinky
+@testable import CoreBluetoothMock
 
 class Sim {
 
@@ -56,4 +57,44 @@ class Sim {
         }
     }
 
+}
+extension XCTestCase {
+
+    /// Turns the mock Bluetooth adapter off and lets the app observe the change.
+    ///
+    /// The app is shared by all tests, and its central manager reports state changes
+    /// asynchronously. If the next test powers the adapter on again before the app was
+    /// notified, the app never sees the adapter off and keeps its state from the
+    /// previous test, e.g. a pending connection, which stops scanning in the next test.
+    func powerOffAndSettle() {
+        CBMCentralManagerMock.simulatePowerOff()
+        let settled = XCTestExpectation(description: "App notified")
+        settled.isInverted = true
+        wait(for: [settled], timeout: 0.2)
+    }
+
+    /// Pops all view controllers pushed by a test and waits until the scanner
+    /// is on top and no transition is in progress.
+    ///
+    /// A view controller that is still being pushed or popped when the next test
+    /// starts would prevent the scanner from restarting scanning, as it does that
+    /// when it appears.
+    func returnToScanner() {
+        let windowScene = UIApplication.shared.connectedScenes.first as! UIWindowScene
+        let navigationController = windowScene.windows.first!.rootViewController as! UINavigationController
+        let settled = XCTestExpectation(description: "Scanner is visible")
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
+            if navigationController.transitionCoordinator != nil {
+                return
+            }
+            if navigationController.viewControllers.count > 1 {
+                navigationController.popToRootViewController(animated: false)
+                return
+            }
+            timer.invalidate()
+            settled.fulfill()
+        }
+        wait(for: [settled], timeout: 5)
+        timer.invalidate()
+    }
 }

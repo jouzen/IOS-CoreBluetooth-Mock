@@ -41,7 +41,7 @@ import CoreBluetooth
 open class CBMAttribute: NSObject {
     
     /// The Bluetooth-specific UUID of the attribute.
-    var uuid: CBMUUID {
+    open var uuid: CBMUUID {
         fatalError()
     }
 }
@@ -122,13 +122,53 @@ internal class CBMServiceNative: CBMService {
         self.peripheral = peripheral
         self.isPrimary = service.isPrimary
                 
-        if let nativeCharacteristics = service.characteristics {
+        let nativeCharacteristics = safeCharacteristics(of: service)
+        if !nativeCharacteristics.isEmpty {
             _characteristics = nativeCharacteristics.map { CBMCharacteristicNative($0, in: self) }
         }
         
         if let nativeSecondaryServices = service.includedServices {
             _includedServices = nativeSecondaryServices.map { CBMServiceNative($0, in: peripheral) }
         }
+    }
+    
+    /// This method is updates the wrapper with the current version of `CBService`.
+    ///
+    /// The method is called when user discovers new service, characteristic or a descriptor.
+    /// The internal wrappers need to reflect the change and add missing attributes.
+    func update(_ service: CBService) {
+        for includedService in service.includedServices ?? [] {
+            if _includedServices == nil { _includedServices = [] }
+            if let existing = (_includedServices as? [CBMServiceNative])?.first(where: { $0.service == includedService }) {
+                existing.update(includedService)
+            } else {
+                let newService = CBMServiceNative(includedService, in: peripheral!)
+                _includedServices!.append(newService)
+            }
+        }
+        
+        for characteristic in safeCharacteristics(of: service) {
+            if _characteristics == nil { _characteristics = [] }
+            if let existing = (_characteristics as? [CBMCharacteristicNative])?.first(where: { $0.characteristic == characteristic }) {
+                existing.update(characteristic)
+            } else {
+                let newCharacteristic = CBMCharacteristicNative(characteristic, in: self)
+                _characteristics!.append(newCharacteristic)
+            }
+        }
+    }
+    
+    /// There is a case when for some reason one of the item in characteristics array is CBService.
+    private func safeCharacteristics(of service: CBService) -> [CBCharacteristic] {
+        let characteristics: [CBCharacteristic]
+
+        if let rawArray = service.characteristics as NSArray? {
+            characteristics = rawArray.compactMap { $0 as? CBCharacteristic }
+        } else {
+            characteristics = []
+        }
+        
+        return characteristics
     }
     
     override func isEqual(_ object: Any?) -> Bool {
@@ -150,11 +190,11 @@ open class CBMServiceMock: CBMService {
     ///   - includedServices: Optional list of included services.
     ///   - characteristics: Optional list of characteristics.
     public convenience init(type uuid: CBMUUID, primary isPrimary: Bool,
-                            includedService: CBMServiceMock...,
+                            includedServices: CBMServiceMock...,
                             characteristics: CBMCharacteristicMock...) {
         self.init(type: uuid,
                   primary: isPrimary,
-                  includedService: includedService,
+                  includedServices: includedServices,
                   characteristics: characteristics)
     }
 
@@ -165,14 +205,17 @@ open class CBMServiceMock: CBMService {
     ///   - includedServices: Optional array of included services.
     ///   - characteristics: Optional array of characteristics.
     public init(type uuid: CBMUUID, primary isPrimary: Bool,
-                includedService: [CBMServiceMock]? = nil,
+                includedServices: [CBMServiceMock]? = nil,
                 characteristics: [CBMCharacteristicMock]? = nil) {
         super.init(type: uuid, primary: isPrimary)
-        if let includedService = includedService {
-            self._includedServices = includedService
+        if let includedServices = includedServices {
+            self._includedServices = includedServices
+            // Note: includedServices[..].peripheral is still nil at this point.
         }
         if let characteristics = characteristics {
             self._characteristics = characteristics
+            // Assign parent service instance.
+            self._characteristics?.forEach { $0.service = self }
         }
     }
 
@@ -215,7 +258,7 @@ open class CBMCharacteristic: CBMAttribute {
     }
     
     /// The properties of the characteristic.
-    public let properties: CBMCharacteristicProperties
+    open internal(set) var properties: CBMCharacteristicProperties
 
     /// The value of the characteristic.
     open internal(set) var value: Data?
@@ -265,10 +308,22 @@ internal class CBMCharacteristicNative: CBMCharacteristic {
         super.init(type: characteristic.uuid, properties: characteristic.properties)
         self.service = service
         self.value = characteristic.value
-        self.isNotifying = isNotifying
+        self.isNotifying = characteristic.isNotifying
         
         if let nativeDescriptors = characteristic.descriptors {
             _descriptors = nativeDescriptors.map { CBMDescriptorNative($0, in: self) }
+        }
+    }
+    
+    func update(_ characteristic: CBCharacteristic) {
+        for descriptor in characteristic.descriptors ?? [] {
+            if _descriptors == nil { _descriptors = [] }
+            if let existing = (_descriptors as? [CBMDescriptorNative])?.first(where: { $0.descriptor == descriptor }) {
+                existing.update(descriptor)
+            } else {
+                let newDescriptor = CBMDescriptorNative(descriptor, in: self)
+                _descriptors!.append(newDescriptor)
+            }
         }
     }
     
@@ -374,6 +429,10 @@ internal class CBMDescriptorNative: CBMDescriptor {
         self.descriptor = descriptor
         super.init(type: descriptor.uuid)
         self.characteristic = characteristic
+        self.value = descriptor.value
+    }
+    
+    func update(_ descriptor: CBDescriptor) {
         self.value = descriptor.value
     }
     
