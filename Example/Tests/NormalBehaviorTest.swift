@@ -52,7 +52,7 @@ class NormalBehaviorTest: XCTestCase {
         // That would invalidate the BlinkyManager in ScannerTableViewController.
         // The central manager must be reused, so let's just power mock off,
         // which will allow us to set different set of peripherals in another test.
-        CBMCentralManagerMock.simulatePowerOff()
+        powerOffAndSettle()
     }
 
     func testScanningBlinky() {
@@ -67,39 +67,41 @@ class NormalBehaviorTest: XCTestCase {
         var target: BlinkyPeripheral?
         let found = XCTestExpectation(description: "Device found")
         Sim.onBlinkyDiscovery { blinky in
-            XCTAssertEqual(blinky.advertisedName, "nRF Blinky")
+            XCTAssertEqual(blinky.advertisedName, "Nordic_Blinky")
             XCTAssert(blinky.isConnectable == true)
             XCTAssert(blinky.isConnected == false)
-            XCTAssertGreaterThanOrEqual(blinky.RSSI.intValue, -70 - 15)
-            XCTAssertLessThanOrEqual(blinky.RSSI.intValue, -70 + 15)
+            XCTAssertGreaterThanOrEqual(blinky.RSSI.intValue, -40 - 15)
+            XCTAssertLessThanOrEqual(blinky.RSSI.intValue, -40 + 15)
             target = blinky
             found.fulfill()
         }
         wait(for: [found], timeout: 3)
-        XCTAssertNotNil(target, "nRF Blinky not found. Make sure you run the test on a simulator.")
+        XCTAssertNotNil(target, "Nordic_Blinky not found. Make sure you run the test on a simulator.")
         if target == nil {
             // Going further would cause a crash.
             return
         }
         
         // Select found device.
-        Sim.post(.selectPeripheral(at: 0))
+        Sim.post(.selectPeripheral(target!))
 
         // Wait until blinky is connected and ready.
         let connected = XCTestExpectation(description: "Connected")
         let ready = XCTestExpectation(description: "Ready")
-        target!.onConnected {
+        let connectionObserver = target!.onConnected {
             connected.fulfill()
         }
-        target!.onReady { ledSupported, buttonSupported in
+        let readyObserver = target!.onReady { ledSupported, buttonSupported in
             if ledSupported && buttonSupported {
                 ready.fulfill()
             }
         }
         wait(for: [connected, ready], timeout: 3)
+        Sim.dispose(connectionObserver)
+        Sim.dispose(readyObserver)
 
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let navigationController = appDelegate.window!.rootViewController as! UINavigationController
+        let windowScene = UIApplication.shared.connectedScenes.first as! UIWindowScene
+        let navigationController = windowScene.windows.first!.rootViewController as! UINavigationController
         let blinkyViewController = navigationController.topViewController as! BlinkyViewController
 
         // Initially, after reset, LED is OFF and button is released.
@@ -125,27 +127,28 @@ class NormalBehaviorTest: XCTestCase {
         let buttonObserver = target!.onButtonStateDidChange { isPressed in
             if isPressed == true {
                 // Simulate releasing the BTN1 on DK.
-                blinky.simulateValueUpdate(Data([0x00]), for: .buttonCharacteristic)
+                blinkyImpl.simulateButtonToggle()
                 buttonPressed.fulfill()
             } else {
                 buttonReleased.fulfill()
             }
         }
         // Simulate clicking the BTN1 on DK.
-        blinky.simulateValueUpdate(Data([0x01]), for: .buttonCharacteristic)
+        blinkyImpl.simulateButtonToggle()
         wait(for: [buttonPressed, buttonReleased], timeout: 1)
         Sim.dispose(buttonObserver)
 
         // Simulate graceful disconnect.
         let disconnection = XCTestExpectation(description: "Disconnection")
-        target!.onDisconnected { error in
+        let disconnectionObserver = target!.onDisconnected { error in
             XCTAssertEqual((error as? CBMError)?.code, CBError.peripheralDisconnected)
             disconnection.fulfill()
         }
         blinky.simulateDisconnection()
         wait(for: [disconnection], timeout: 1)
+        Sim.dispose(disconnectionObserver)
 
-        navigationController.popViewController(animated: true)
+        returnToScanner()
     }
 
 }

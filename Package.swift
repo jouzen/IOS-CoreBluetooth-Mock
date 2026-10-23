@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.9
 //
 // The `swift-tools-version` declares the minimum version of Swift required to
 // build this package. Do not remove it.
@@ -8,16 +8,16 @@ import PackageDescription
 let package = Package(
   name: "CoreBluetoothMock",
   platforms: [
-    .macOS(.v10_13),
-    .iOS(.v11),
-    .watchOS(.v4),
-    .tvOS(.v11)
+    .macOS(.v10_14),
+    .iOS(.v12),
+    .watchOS(.v9),
+    .tvOS(.v12)
   ],
   products: [
     .library(name: "CoreBluetoothMock", targets: ["CoreBluetoothMock"])
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.0.0")
+    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.5.0")
   ],
   targets: [
     .target(

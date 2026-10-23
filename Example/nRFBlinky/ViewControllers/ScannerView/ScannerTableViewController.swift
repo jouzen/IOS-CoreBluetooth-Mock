@@ -35,11 +35,11 @@ class ScannerTableViewController: UITableViewController {
     // MARK: - Outlets and Actions
     
     @IBOutlet weak var emptyPeripheralsView: UIView!
-    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     
     // MARK: - Properties
 
     private var manager: BlinkyManager!
+    private var activityIndicator: UIActivityIndicatorView!
     
     // MARK: - UIViewController
 
@@ -48,6 +48,17 @@ class ScannerTableViewController: UITableViewController {
         tableView.isAccessibilityElement = true
         tableView.accessibilityLabel = "Scan Results"
         tableView.accessibilityIdentifier = "scanResults"
+        
+        if #available(iOS 26.0, *) {
+            activityIndicator = UIActivityIndicatorView(style: .medium)
+        } else {
+            activityIndicator = UIActivityIndicatorView(style: .white)
+        }
+        let indicator = UIBarButtonItem(customView: activityIndicator)
+        if #available(iOS 26.0, *) {
+            indicator.hidesSharedBackground = true
+        }
+        navigationItem.rightBarButtonItem = indicator
 
         let mock = (UIApplication.shared.delegate as! AppDelegate).mockingEnabled
         manager = BlinkyManager(mock)
@@ -60,6 +71,11 @@ class ScannerTableViewController: UITableViewController {
         }
         _ = manager.onBlinkyDiscovery { [unowned self] blinky in
             self.addOrUpdateBlinky(blinky)
+            self.hideEmptyPeripheralsView()
+        }
+        _ = manager.onBlinkyConnected { [unowned self] blinky in
+            self.stopScan()
+            self.connectBlinky(blinky)
         }
         _ = onPeripheralSelected { [unowned self] blinky in
             self.stopScan()
@@ -70,11 +86,14 @@ class ScannerTableViewController: UITableViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         manager.reset()
+        showEmptyPeripheralsView()
         tableView.reloadData()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        // This must be here to restart scanning when we
+        // go back from the BlinkyViewController.
         startScan()
     }
 
@@ -88,7 +107,7 @@ class ScannerTableViewController: UITableViewController {
                 let height = self.emptyPeripheralsView.frame.height
                 if context.containerView.frame.height > context.containerView.frame.width {
                     self.emptyPeripheralsView.frame = CGRect(
-                        x: 0,         y: (context.containerView.frame.height / 2) - 180,
+                        x: 0,         y: 120,
                         width: width, height: height
                     )
                 } else {
@@ -104,11 +123,6 @@ class ScannerTableViewController: UITableViewController {
     // MARK: - UITableViewDelegate
     
     override func numberOfSections(in tableView: UITableView) -> Int {
-        if manager.isEmpty {
-            showEmptyPeripheralsView()
-        } else {
-            hideEmptyPeripheralsView()
-        }
         return manager.discoveredPeripherals.count > 0 ? 1 : 0
     }
     
@@ -136,7 +150,9 @@ class ScannerTableViewController: UITableViewController {
     override func tableView(_ tableView: UITableView,
                             didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        post(.selectPeripheral(at: indexPath.row))
+        
+        let blinky = manager.discoveredPeripherals[indexPath.row]
+        post(.selectPeripheral(blinky))
     }
 
     // MARK: - Segue and navigation
@@ -164,7 +180,7 @@ private extension ScannerTableViewController {
             view.addSubview(emptyPeripheralsView)
             emptyPeripheralsView.alpha = 0
             emptyPeripheralsView.frame = CGRect(
-                    x: 0,                    y: (view.frame.height / 2) - 180,
+                    x: 0,                    y: 120,
                     width: view.frame.width, height: emptyPeripheralsView.frame.height)
             view.bringSubviewToFront(emptyPeripheralsView)
             UIView.animate(withDuration: 0.5) {
@@ -212,8 +228,8 @@ extension Notification.Name {
 
 extension Notification {
 
-    static func selectPeripheral(at index: Int) -> Notification {
-        return Notification(name: .selection, userInfo: ["row": index])
+    static func selectPeripheral(_ blinky: BlinkyPeripheral) -> Notification {
+        return Notification(name: .selection, object: blinky)
     }
 
 }
@@ -234,9 +250,7 @@ private extension ScannerTableViewController {
 
     func onPeripheralSelected(do action: @escaping (BlinkyPeripheral) -> ()) -> NSObjectProtocol {
         return on(.selection) { notification in
-            if let userInfo = notification.userInfo,
-               let index = userInfo["row"] as? Int {
-                let blinky = self.manager.discoveredPeripherals[index]
+            if let blinky = notification.object as? BlinkyPeripheral {
                 action(blinky)
             }
         }

@@ -31,7 +31,7 @@
 import CoreBluetooth
 
 /// The possible states of a Core Bluetooth manager.
-public enum CBMManagerState: Int {
+public enum CBMManagerState: Int, Sendable {
     /// The manager’s state is unknown.
     case unknown
     /// A state that indicates the connection with the system service was momentarily lost.
@@ -49,7 +49,7 @@ public enum CBMManagerState: Int {
 // In Xcode 12.5 the initializers of CBPeer and CBAttribute
 // became private, therefore they cannot be user. A local
 // counterparts have been created in the library.
-// https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock/issues/33
+// https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/issues/33
 //
 // public typealias CBMPeer = CBPeer
 // public typealias CBMAttribute = CBAttribute
@@ -108,6 +108,35 @@ public typealias CBML2CAPChannel = CBL2CAPChannel
 /// The current authorization state of a Core Bluetooth manager.
 @available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *)
 public typealias CBMManagerAuthorization = CBManagerAuthorization
+/// Values that represent the read, write, and encryption permissions for a characteristic’s value.
+///
+/// Permissions are set on ``CBMMutableCharacteristic`` objects published by a ``CBMPeripheralManager``.
+public typealias CBMAttributePermissions = CBAttributePermissions
+/// Values representing the desired connection latency for a peripheral manager connection.
+public typealias CBMPeripheralManagerConnectionLatency = CBPeripheralManagerConnectionLatency
+
+/// A Boolean value that specifies whether the system warns the user if the app instantiates
+/// the peripheral manager when Bluetooth service isn’t available.
+///
+/// The value for this key is an `NSNumber` object. If the key isn’t specified, the default value is `true`.
+public let CBMPeripheralManagerOptionShowPowerAlertKey = CBPeripheralManagerOptionShowPowerAlertKey
+/// A string containing a unique identifier (UID) for the peripheral manager to instantiate.
+///
+/// The value for this key is an `NSString`. The system uses this UID to identify a specific
+/// peripheral manager. As a result, the UID must remain the same for subsequent executions
+/// of the app to restore the peripheral manager.
+public let CBMPeripheralManagerOptionRestoreIdentifierKey = CBPeripheralManagerOptionRestoreIdentifierKey
+/// An array of services for use when restoring the state of a peripheral manager.
+///
+/// The value associated with this key is an `NSArray` of ``CBMMutableService`` objects.
+/// The array contains all of the services published by the peripheral manager at the time
+/// the system terminated the app.
+public let CBMPeripheralManagerRestoredStateServicesKey = CBPeripheralManagerRestoredStateServicesKey
+/// A dictionary of advertisement data for use when restoring the state of a peripheral manager.
+///
+/// The value associated with this key is an `NSDictionary`. The dictionary contains the data
+/// the peripheral manager was advertising at the time the system terminated the app.
+public let CBMPeripheralManagerRestoredStateAdvertisementDataKey = CBPeripheralManagerRestoredStateAdvertisementDataKey
 
 /// A Boolean value that specifies whether the scan should run without duplicate filtering.
 ///
@@ -119,6 +148,14 @@ public typealias CBMManagerAuthorization = CBManagerAuthorization
 /// - Important: Disabling this filtering can have an adverse effect on battery life;
 ///              use it only if necessary.
 public let CBMCentralManagerScanOptionAllowDuplicatesKey = CBCentralManagerScanOptionAllowDuplicatesKey
+/// An array of service UUIDs that you want to scan for.
+///
+/// The array is an instance of `NSArray`, and uses ``CBMUUID`` objects to represent the UUIDs
+/// to scan for.
+///
+/// Specifying this scan option causes the central manager to also scan for peripherals soliciting
+/// any of the services contained in the array.
+public let CBMCentralManagerScanOptionSolicitedServiceUUIDsKey = CBCentralManagerScanOptionSolicitedServiceUUIDsKey
 /// A Boolean value that specifies whether the system warns the user if the app instantiates
 /// the central manager when Bluetooth service isn’t available.
 ///
@@ -130,26 +167,9 @@ public let CBMCentralManagerOptionShowPowerAlertKey = CBCentralManagerOptionShow
 /// central manager. As a result, the UID must remain the same for subsequent executions
 /// of the app to restore the central manager.
 public let CBMCentralManagerOptionRestoreIdentifierKey = CBCentralManagerOptionRestoreIdentifierKey
-/// An array of service UUIDs that you want to scan for.
-///
-/// The array is an instance of `NSArray`, and uses ``CBMUUID`` objects to represent the UUIDs
-/// to scan for.
-///
-/// Specifying this scan option causes the central manager to also scan for peripherals soliciting
-/// any of the services contained in the array.
-public let CBMCentralManagerScanOptionSolicitedServiceUUIDsKey = CBCentralManagerScanOptionSolicitedServiceUUIDsKey
-/// An option that indicates a delay before the system makes a connection.
-///
-/// The corresponding value is an `NSNumber` that indicates the duration of the delay in seconds.
-public let CBMConnectPeripheralOptionStartDelayKey = CBConnectPeripheralOptionStartDelayKey
-#if !os(macOS)
-/// An option to require Apple Notification Center Service (ANCS) when connecting a device.
-@available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public let CBMConnectPeripheralOptionRequiresANCS = CBConnectPeripheralOptionRequiresANCS
-#endif
 /// An array of peripherals for use when restoring the state of a central manager.
 ///
-/// The value associated with this key is an `NSArray` of ``CBMPeripheral`` objects.
+/// The value associated with this key is an `NSArray` of ``CBMPeripheralSpec`` objects.
 /// The array contains all of the peripherals connected to the central manager
 /// (or had a pending connection) at the time the system terminated the app.
 ///
@@ -190,7 +210,7 @@ public let CBMAdvertisementDataIsConnectable            = CBAdvertisementDataIsC
 public let CBMAdvertisementDataTxPowerLevelKey          = CBAdvertisementDataTxPowerLevelKey
 /// A dictionary that contains service-specific advertisement data.
 ///
-/// he keys (``CBMUUID`` objects) represent ``CBMService`` UUIDs, and the values
+/// The keys (``CBMUUID`` objects) represent ``CBMService`` UUIDs, and the values
 /// (`NSData` objects) represent service-specific data.
 public let CBMAdvertisementDataServiceDataKey           = CBAdvertisementDataServiceDataKey
 /// The manufacturer data of a peripheral.
@@ -213,6 +233,15 @@ public let CBMAdvertisementDataOverflowServiceUUIDsKey  = CBAdvertisementDataOve
 /// representing ``CBMService`` UUIDs.
 public let CBMAdvertisementDataSolicitedServiceUUIDsKey = CBAdvertisementDataSolicitedServiceUUIDsKey
 
+/// An option that indicates a delay before the system makes a connection.
+///
+/// The corresponding value is an `NSNumber` that indicates the duration of the delay in seconds.
+public let CBMConnectPeripheralOptionStartDelayKey = CBConnectPeripheralOptionStartDelayKey
+#if !os(macOS)
+/// An option to require Apple Notification Center Service (ANCS) when connecting a device.
+@available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+public let CBMConnectPeripheralOptionRequiresANCS = CBConnectPeripheralOptionRequiresANCS
+#endif
 /// A Boolean value that specifies whether the system should display an alert when
 /// connecting a peripheral in the background.
 ///
@@ -255,3 +284,12 @@ public let CBMConnectPeripheralOptionNotifyOnNotificationKey = CBConnectPeripher
 @available(iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public let CBMConnectPeripheralOptionEnableTransportBridgingKey = CBConnectPeripheralOptionEnableTransportBridgingKey
 #endif
+/// An Boolean indicating that the AutoReconnect is enabled for the peripheral is connected.
+///
+/// After peripheral device is connected, this will allow the system to initiate connect to the peer
+/// device automatically when link is dropped.
+///
+/// Caller will get notified about the disconnection with potential delay via
+/// ``CBMCentralManagerDelegate/centralManager(_:didDisconnectPeripheral:timestamp:isReconnecting:error:)-305ej``.
+@available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, *)
+public let CBMConnectPeripheralOptionEnableAutoReconnect = CBConnectPeripheralOptionEnableAutoReconnect

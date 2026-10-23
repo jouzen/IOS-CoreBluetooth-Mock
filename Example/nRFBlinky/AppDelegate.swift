@@ -34,11 +34,8 @@ import CoreBluetoothMock
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    // Required for the Storyboard to show up.
-    var window: UIWindow?
-    
     var mockingEnabled: Bool = false
-    
+
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // UI Tests can't access app code, so the Blinky mock must be in the app.
@@ -64,11 +61,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             CBMCentralManagerMock.simulateInitialState(.poweredOn)
             CBMCentralManagerMock.simulatePeripherals([blinky, hrm, thingy])
 
-            // Set up initial conditions.
+            // Simulate state restoration.
+            CBMCentralManagerMock.simulateStateRestoration = { identifierKey in
+                if identifierKey == "no.nordicsemi.blinky" {
+                    return [
+                        // When the app was killed it was scanning with the LBS Service UUID filter.
+                        CBMCentralManagerRestoredStateScanServicesKey: [
+                            Blinky.serviceUUID
+                        ],
+                        // Also, the app was scanning with the "Allow Duplicates" option enabled.
+                        CBMCentralManagerRestoredStateScanOptionsKey: [
+                            CBMCentralManagerScanOptionAllowDuplicatesKey: true as NSNumber
+                        ],
+                        // Here we may simulate peripheral state restoration.
+                        // Depending on whether the peripheral spec was created using
+                        // .connectable(...) or .connected(...), and the proximity value
+                        // the peripheral will be restored with state .connecting or .connected.
+                        //
+                        CBMCentralManagerRestoredStatePeripheralsKey: [blinky]
+                    ]
+                }
+                return nil
+            }
+
+            // Simulate range changes using:
             blinky.simulateProximityChange(.immediate)
             hrm.simulateProximityChange(.near)
             thingy.simulateProximityChange(.far)
-            blinky.simulateReset()
+            
+            // Simulate a reset after a while to make the device reconnect again:
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(3000)) {
+                blinky.simulateReset()
+            }
         }
         #endif
         
@@ -80,6 +104,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         #endif
         
         return true
+    }
+
+    // MARK: - UISceneSession Lifecycle
+
+    func application(_ application: UIApplication,
+                      configurationForConnecting connectingSceneSession: UISceneSession,
+                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+    }
+
+    func application(_ application: UIApplication,
+                      didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
     }
 
 }

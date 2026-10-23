@@ -10,8 +10,8 @@ Bluetooth LE devices using an implementation in Swift. This allows:
 * Simulating a Bluetooth LE device during the development phase,
 * Reliable method for automating tests and taking screenshots.
 
-> Note: Current version supports testing only central manager features. 
-        The peripheral manager functionality is planned.
+The library supports both roles: apps acting as a *central* (``CBMCentralManager``) and as
+a *peripheral* (``CBMPeripheralManager``).
 
 ## Topics
 
@@ -23,13 +23,17 @@ Bluetooth LE devices using an implementation in Swift. This allows:
 
 - <doc:Mocking-peripherals>
 
+### How to mock centrals when your app is a peripheral
+
+- <doc:Mocking-centrals>
+
 ### How to simulate test events
 
 - <doc:Simulation>
 
 ### Known issues
 
-- <doc:Known-issues>
+- <doc:KnownIssues>
 
 ### Mocking Bluetooth LE Devices
 
@@ -51,6 +55,45 @@ devices. Such mock peripherals will be available using ``CBMCentralManagerMock``
 - ``CBMCentralManagerNative``
 - ``CBMManagerState``
 - ``CBMManagerAuthorization``
+
+### Mocking Bluetooth LE Centrals
+
+The following objects can be used to create mock implementation of Bluetooth LE
+centrals. Such mock centrals interact with ``CBMPeripheralManagerMock``.
+
+- ``CBMCentralSpec``
+- ``CBMCentralSpecDelegate``
+
+### Peripheral Manager
+
+- ``CBMPeripheralManagerFactory``
+- ``CBMPeripheralManager``
+- ``CBMPeripheralManagerDelegate``
+- ``CBMPeripheralManagerMock``
+- ``CBMPeripheralManagerNative``
+- ``CBMCentral``
+- ``CBMCentralMock``
+- ``CBMCentralNative``
+- ``CBMATTRequest``
+- ``CBMATTRequestMock``
+- ``CBMATTRequestNative``
+- ``CBMAttributePermissions``
+- ``CBMPeripheralManagerConnectionLatency``
+
+### Published Attributes
+
+- ``CBMMutableService``
+- ``CBMMutableCharacteristic``
+- ``CBMMutableDescriptor``
+
+### Peripheral Manager Options
+
+Keys used to pass options when initializing a peripheral manager, and when restoring its state.
+
+- ``CBMPeripheralManagerOptionShowPowerAlertKey``
+- ``CBMPeripheralManagerOptionRestoreIdentifierKey``
+- ``CBMPeripheralManagerRestoredStateServicesKey``
+- ``CBMPeripheralManagerRestoredStateAdvertisementDataKey``
 
 ### Central Manager Initialization Options
 
@@ -85,6 +128,7 @@ Keys used to pass state restoration options to the central manager initializer.
 
 Keys used to pass options when connecting to a peripheral.
 
+- ``CBMConnectPeripheralOptionEnableAutoReconnect``
 - ``CBMConnectPeripheralOptionNotifyOnConnectionKey``
 - ``CBMConnectPeripheralOptionNotifyOnDisconnectionKey``
 - ``CBMConnectPeripheralOptionNotifyOnNotificationKey``

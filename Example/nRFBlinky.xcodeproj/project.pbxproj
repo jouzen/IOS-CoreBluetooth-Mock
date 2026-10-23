@@ -13,6 +13,13 @@
 		2DBB2D9D87AA009D95C10DEE /* ResetTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBB22CFA82E35CBA3BB326F /* ResetTest.swift */; };
 		2DBB2F44478EB7F4C0DF3AA4 /* BlinkyManagerEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBB27ABD18F3DAECC075CF2 /* BlinkyManagerEvents.swift */; };
 		526EA53D240D2F8100BF70B2 /* UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526EA53C240D2F8100BF70B2 /* UITests.swift */; };
+		7E5A01000000000000000B00 /* CentralBehaviorTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A00000000000000000A00 /* CentralBehaviorTestCase.swift */; };
+		7E5A01010000000000000B01 /* CentralManagerBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A00010000000000000A01 /* CentralManagerBehaviorTest.swift */; };
+		7E5A01020000000000000B02 /* PeripheralBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A00020000000000000A02 /* PeripheralBehaviorTest.swift */; };
+		7E5A0103000000000000000B /* PeripheralManagerBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0003000000000000000A /* PeripheralManagerBehaviorTest.swift */; };
+		7E5A0106000000000000000B /* PeripheralConformanceTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0006000000000000000A /* PeripheralConformanceTest.swift */; };
+		7E5A0105000000000000000B /* CentralConformanceTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0005000000000000000A /* CentralConformanceTest.swift */; };
+		7E5A0104000000000000000B /* CentralManagerAdvancedBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A0004000000000000000A /* CentralManagerAdvancedBehaviorTest.swift */; };
 		52991CE726C26CE90029CD9E /* RetrievingDevicesTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52991CE626C26CE90029CD9E /* RetrievingDevicesTest.swift */; };
 		52A128B726CD9AF800DE5F37 /* MultipleInstancesTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A128B626CD9AF800DE5F37 /* MultipleInstancesTest.swift */; };
 		52A648F1240E83F000817F2F /* NormalBehaviorTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A648F0240E83F000817F2F /* NormalBehaviorTest.swift */; };
@@ -33,8 +40,10 @@
 		52E905CE24DD35A100BB5740 /* FailedConnectionTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52E905CD24DD35A100BB5740 /* FailedConnectionTest.swift */; };
 		5E01FCC8764D3885F127A357 /* Pods_nRFBlinky_nRFBlinky_UITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE38B9C36EDC9D3F334FA8B0 /* Pods_nRFBlinky_nRFBlinky_UITests.framework */; };
 		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
+		A1B2C3D4E5F60708192A3B4D /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708192A3B4C /* SceneDelegate.swift */; };
 		CAEB6BB3B003B5EF5ADC4A1C /* Pods_nRFBlinky.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D2ABBED0526CCFDE935416B /* Pods_nRFBlinky.framework */; };
 		F0A6C9F229A9100200FA75EB /* AdvertisingTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A6C9F129A9100200FA75EB /* AdvertisingTest.swift */; };
+		F0A6C9F229A9100200FA75EC /* PeripheralManagerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A6C9F129A9100200FA75EC /* PeripheralManagerTest.swift */; };
 		FD694FD2565733B80A796310 /* Pods_nRFBlinky_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 39F46F48F88E4B881853C6D0 /* Pods_nRFBlinky_Tests.framework */; };
 /* End PBXBuildFile section */
 
@@ -70,6 +79,13 @@
 		526EA53A240D2F8100BF70B2 /* nRFBlinky_UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = nRFBlinky_UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		526EA53C240D2F8100BF70B2 /* UITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests.swift; sourceTree = "<group>"; };
 		526EA53E240D2F8100BF70B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7E5A00000000000000000A00 /* CentralBehaviorTestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralBehaviorTestCase.swift; sourceTree = "<group>"; };
+		7E5A00010000000000000A01 /* CentralManagerBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralManagerBehaviorTest.swift; sourceTree = "<group>"; };
+		7E5A00020000000000000A02 /* PeripheralBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralBehaviorTest.swift; sourceTree = "<group>"; };
+		7E5A0003000000000000000A /* PeripheralManagerBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralManagerBehaviorTest.swift; sourceTree = "<group>"; };
+		7E5A0006000000000000000A /* PeripheralConformanceTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralConformanceTest.swift; sourceTree = "<group>"; };
+		7E5A0005000000000000000A /* CentralConformanceTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralConformanceTest.swift; sourceTree = "<group>"; };
+		7E5A0004000000000000000A /* CentralManagerAdvancedBehaviorTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralManagerAdvancedBehaviorTest.swift; sourceTree = "<group>"; };
 		52991CE626C26CE90029CD9E /* RetrievingDevicesTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetrievingDevicesTest.swift; sourceTree = "<group>"; };
 		52A128B626CD9AF800DE5F37 /* MultipleInstancesTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipleInstancesTest.swift; sourceTree = "<group>"; };
 		52A648E0240E7BDF00817F2F /* CoreBluetoothMock.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CoreBluetoothMock.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -127,11 +143,13 @@
 		7AB6F07851AFF688E109B976 /* Pods-nRFBlinky.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nRFBlinky.release.xcconfig"; path = "Target Support Files/Pods-nRFBlinky/Pods-nRFBlinky.release.xcconfig"; sourceTree = "<group>"; };
 		8CDE406D1457C10CB4EE666D /* Pods-nRFBlinky.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nRFBlinky.debug.xcconfig"; path = "Target Support Files/Pods-nRFBlinky/Pods-nRFBlinky.debug.xcconfig"; sourceTree = "<group>"; };
 		9723757454CD65FC25E163A5 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708192A3B4C /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		DE38B9C36EDC9D3F334FA8B0 /* Pods_nRFBlinky_nRFBlinky_UITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_nRFBlinky_nRFBlinky_UITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF2A391A629B418AF377967D /* CoreBluetoothMock.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = CoreBluetoothMock.podspec; path = ../CoreBluetoothMock.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		EF952C1221D6FC1BB09999FC /* Pods-nRFBlinky-nRFBlinky_UITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nRFBlinky-nRFBlinky_UITests.release.xcconfig"; path = "Target Support Files/Pods-nRFBlinky-nRFBlinky_UITests/Pods-nRFBlinky-nRFBlinky_UITests.release.xcconfig"; sourceTree = "<group>"; };
 		F04F4A2C2B839E67004E7942 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F0A6C9F129A9100200FA75EB /* AdvertisingTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisingTest.swift; sourceTree = "<group>"; };
+		F0A6C9F129A9100200FA75EC /* PeripheralManagerTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralManagerTest.swift; sourceTree = "<group>"; };
 		F0A6C9F329ACA59A00FA75EB /* nRFBlinky.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = nRFBlinky.entitlements; path = nRFBlinky/nRFBlinky.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -185,8 +203,16 @@
 			children = (
 				52A648F0240E83F000817F2F /* NormalBehaviorTest.swift */,
 				F0A6C9F129A9100200FA75EB /* AdvertisingTest.swift */,
+				F0A6C9F129A9100200FA75EC /* PeripheralManagerTest.swift */,
 				2DBB22CFA82E35CBA3BB326F /* ResetTest.swift */,
 				52E905CD24DD35A100BB5740 /* FailedConnectionTest.swift */,
+				7E5A00000000000000000A00 /* CentralBehaviorTestCase.swift */,
+				7E5A00010000000000000A01 /* CentralManagerBehaviorTest.swift */,
+				7E5A00020000000000000A02 /* PeripheralBehaviorTest.swift */,
+				7E5A0003000000000000000A /* PeripheralManagerBehaviorTest.swift */,
+				7E5A0006000000000000000A /* PeripheralConformanceTest.swift */,
+				7E5A0005000000000000000A /* CentralConformanceTest.swift */,
+				7E5A0004000000000000000A /* CentralManagerAdvancedBehaviorTest.swift */,
 				52991CE626C26CE90029CD9E /* RetrievingDevicesTest.swift */,
 				52A128B626CD9AF800DE5F37 /* MultipleInstancesTest.swift */,
 				2DBB2F5ACA6DCE530B0DDE90 /* EventHelper.swift */,
@@ -290,6 +316,7 @@
 			isa = PBXGroup;
 			children = (
 				52B537B123FBE85100372948 /* AppDelegate.swift */,
+				A1B2C3D4E5F60708192A3B4C /* SceneDelegate.swift */,
 				52B537D723FC129400372948 /* MockPeripherals.swift */,
 				52A648FA24125D1D00817F2F /* CoreBluetoothTypeAliases.swift */,
 				52B5377223FBE84900372948 /* Models */,
@@ -414,7 +441,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1130;
-				LastUpgradeCheck = 1520;
+				LastUpgradeCheck = 2650;
 				ORGANIZATIONNAME = CocoaPods;
 				TargetAttributes = {
 					526EA539240D2F8100BF70B2 = {
@@ -619,10 +646,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				52A648F1240E83F000817F2F /* NormalBehaviorTest.swift in Sources */,
+				7E5A01000000000000000B00 /* CentralBehaviorTestCase.swift in Sources */,
+				7E5A01010000000000000B01 /* CentralManagerBehaviorTest.swift in Sources */,
+				7E5A01020000000000000B02 /* PeripheralBehaviorTest.swift in Sources */,
+				7E5A0103000000000000000B /* PeripheralManagerBehaviorTest.swift in Sources */,
+				7E5A0106000000000000000B /* PeripheralConformanceTest.swift in Sources */,
+				7E5A0105000000000000000B /* CentralConformanceTest.swift in Sources */,
+				7E5A0104000000000000000B /* CentralManagerAdvancedBehaviorTest.swift in Sources */,
 				52991CE726C26CE90029CD9E /* RetrievingDevicesTest.swift in Sources */,
 				2DBB258568F7E07E0DFA3B4E /* EventHelper.swift in Sources */,
 				52E905CE24DD35A100BB5740 /* FailedConnectionTest.swift in Sources */,
 				F0A6C9F229A9100200FA75EB /* AdvertisingTest.swift in Sources */,
+				F0A6C9F229A9100200FA75EC /* PeripheralManagerTest.swift in Sources */,
 				52A128B726CD9AF800DE5F37 /* MultipleInstancesTest.swift in Sources */,
 				2DBB2D9D87AA009D95C10DEE /* ResetTest.swift in Sources */,
 			);
@@ -642,6 +677,7 @@
 				52A648FB24125D1D00817F2F /* CoreBluetoothTypeAliases.swift in Sources */,
 				52B537AB23FBE84900372948 /* RootViewController.swift in Sources */,
 				52B537B223FBE85100372948 /* AppDelegate.swift in Sources */,
+				A1B2C3D4E5F60708192A3B4D /* SceneDelegate.swift in Sources */,
 				2DBB2A694C3D00999D8B3E29 /* BlinkyManager.swift in Sources */,
 				2DBB2F44478EB7F4C0DF3AA4 /* BlinkyManagerEvents.swift in Sources */,
 				2DBB24A841D22CDDB14787B6 /* BlinkyPeripheralEvents.swift in Sources */,
@@ -733,7 +769,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 3E37F158B588B40B5C56F8E4 /* Pods-nRFBlinky-nRFBlinky_UITests.debug.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = "$(inherited)";
 				BUNDLE_LOADER = "";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -743,11 +778,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				INFOPLIST_FILE = "UI Tests/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -770,7 +804,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EF952C1221D6FC1BB09999FC /* Pods-nRFBlinky-nRFBlinky_UITests.release.xcconfig */;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = "$(inherited)";
 				BUNDLE_LOADER = "";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -779,11 +812,10 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				INFOPLIST_FILE = nRFBlinky_UITests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -813,11 +845,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				INFOPLIST_FILE = Tests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -846,11 +877,10 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				INFOPLIST_FILE = nRFBlinky_Tests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -898,6 +928,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -922,6 +953,7 @@
 				OTHER_SWIFT_FLAGS = "-D DEBUG";
 				RUN_DOCUMENTATION_COMPILER = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -959,6 +991,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -974,6 +1007,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				RUN_DOCUMENTATION_COMPILER = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
@@ -987,18 +1021,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = nRFBlinky/nRFBlinky.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
 				INFOPLIST_FILE = nRFBlinky/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "nRF Blinky";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.6.0;
 				MODULE_NAME = ExampleApp;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nordicsemi.nrf-blinky";
 				PRODUCT_NAME = "nRF Blinky";
@@ -1019,17 +1052,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = nRFBlinky/nRFBlinky.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = P3R8YQEV4L;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = nRFBlinky/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "nRF Blinky";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.6.0;
 				MODULE_NAME = ExampleApp;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nordicsemi.nrf-blinky";
 				PRODUCT_NAME = "nRF Blinky";

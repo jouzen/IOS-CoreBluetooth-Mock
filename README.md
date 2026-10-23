@@ -1,9 +1,13 @@
 # Core Bluetooth Mock
 
-![Version number](https://img.shields.io/cocoapods/v/CoreBluetoothMock) 
-[![Platform](https://img.shields.io/cocoapods/p/CoreBluetoothMock.svg?style=flat)](https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock)
+[![Platform](https://img.shields.io/cocoapods/p/CoreBluetoothMock.svg?style=flat)](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
 [![SPM compatible](https://img.shields.io/badge/SPM-compatible-green?style=flat)](https://swift.org/package-manager)
+![Version number](https://img.shields.io/cocoapods/v/CoreBluetoothMock) 
+[![Release](https://img.shields.io/github/release/nordicsemi/IOS-CoreBluetooth-Mock.svg)](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/releases)
+[![GitHub stars](https://img.shields.io/github/stars/nordicsemi/IOS-CoreBluetooth-Mock)](https://github.com/nordicsemi/CoreBluetoothMock/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/nordicsemi/IOS-CoreBluetooth-Mock)](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/members)
+[![GitHub contributors](https://img.shields.io/github/contributors/nordicsemi/IOS-CoreBluetooth-Mock)](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/graphs/contributors)
 
 The *Core Bluetooth Mock* library was designed to emulate *Core Bluetooth* objects, providing easy way to test 
 Bluetooth-enabled apps. As the native Bluetooth API is not supported on a simulator, using this library you can run, test 
@@ -26,13 +30,16 @@ The *Core Bluetooth Mock* library defines a number of **CBM...** classes and con
 behavior as `CBCentralManager`, etc. On physical iDevices all calls to `CBMCentralManager` and `CBMPeripheral` are
 forwarded to their native equivalents, but on a simulator a user defined mock implementation is used. 
 
+Both roles are supported: apps that act as a *central* (`CBMCentralManager`, simulated using `CBMPeripheralSpec`) and
+apps that act as a *peripheral* (`CBMPeripheralManager`, simulated using `CBMCentralSpec`).
+
 ## Requirements
 
 The *Core Bluetooth Mock* library is available only in *Swift*, and compatible with 
 * iOS 12.0+[^1], 
 * macOS 10.14+, 
 * tvOS 12.0+[^1],
-* watchOS 4.0+
+* watchOS 9.0+[^2]
 
 (with some features available only on newer platforms).
 
@@ -40,6 +47,7 @@ The *Core Bluetooth Mock* library is available only in *Swift*, and compatible w
 > For projects running Objective-C we recommend https://github.com/Rightpoint/RZBluetooth library.
 
 [^1]: Xcode 15 dropped support for iOS 9.0 and tvOS 9.0 in simulator. Now the minimum supported version is 12.0 for both platforms.
+[^2]: Xcode 27 deprecated watchOS deployment targets older than 9.0.
 
 ## Installation
 
@@ -71,7 +79,7 @@ The library support [CocoaPods](https://github.com/CocoaPods/CocoaPods), [Cartha
 - Create a new **Cartfile** in your project's root with the following contents
 
     ```
-    github "https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock" ~> x.y // Replace x.y with your required version
+    github "https://github.com/nordicsemi/IOS-CoreBluetooth-Mock" ~> x.y // Replace x.y with your required version
     ```
     
 - Build with carthage
@@ -86,14 +94,14 @@ The library support [CocoaPods](https://github.com/CocoaPods/CocoaPods), [Cartha
    <summary>Swift Package Manager</summary>
 
 - In Xcode: *File -> Swift Packages -> Add package dependency*, 
-type *https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock.git* and set required version, branch or commit.
+type *https://github.com/nordicsemi/IOS-CoreBluetooth-Mock.git* and set required version, branch or commit.
 
 - If you have *Swift.package* file, include the following dependency:
   ```swift
   dependencies: [
       // [...]
       .package(name: "CoreBluetoothMock", 
-               url: "https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock.git", 
+               url: "https://github.com/nordicsemi/IOS-CoreBluetooth-Mock.git", 
                .upToNextMajor(from: "x.y")) // Replace x.y with your required version
   ]
   ```
@@ -108,15 +116,70 @@ type *https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock.git* and set
   ```
 </details>
 
+## Usage
+
+### Apps acting as a central
+
+Replace `CBCentralManager` with `CBMCentralManager`, and create it using the factory. On a simulator the mock
+implementation is returned and talks to peripherals defined using `CBMPeripheralSpec`:
+
+```swift
+let manager = CBMCentralManagerFactory.instance(delegate: self, queue: nil)
+
+// In tests, before the manager is created:
+let device = CBMPeripheralSpec
+    .simulatePeripheral(proximity: .near)
+    .advertising(
+        advertisementData: [
+            CBMAdvertisementDataLocalNameKey    : "My device",
+            CBMAdvertisementDataServiceUUIDsKey : [myServiceUUID],
+            CBMAdvertisementDataIsConnectable   : true as NSNumber
+        ],
+        withInterval: 0.250)
+    .connectable(name: "My device", services: [myService], delegate: MyDeviceDelegate())
+    .build()
+CBMCentralManagerMock.simulatePeripherals([device])
+CBMCentralManagerMock.simulateInitialState(.poweredOn)
+```
+
+### Apps acting as a peripheral
+
+Replace `CBPeripheralManager` with `CBMPeripheralManager`, and `CBMutableService`, `CBMutableCharacteristic` and 
+`CBMutableDescriptor` with their `CBM...` counterparts. Create the manager using the factory:
+
+```swift
+let manager = CBMPeripheralManagerFactory.instance(delegate: self, queue: nil)
+```
+
+On a simulator the mock implementation is returned. It interacts with mock centrals defined using `CBMCentralSpec`, 
+which scan, connect, read, write and subscribe to the characteristics published by the app, and receive notifications:
+
+```swift
+// In tests:
+CBMCentralManagerMock.simulateInitialState(.poweredOn)   // the Bluetooth adapter is shared with the central role
+
+let central = CBMCentralSpec(maximumUpdateValueLength: 20, delegate: self)
+central.simulateConnection()
+let characteristics = central.simulateCharacteristicDiscovery(forService: myServiceUUID)
+central.simulateSubscription(to: characteristics[0])
+central.simulateReadRequest(for: characteristics[1]) { result in /* ... */ }
+```
+
+Not simulated: L2CAP channels and connection events (the delegate is told that the operation is not supported), 
+prepared writes, and advertisement data other than the local name and service UUIDs.
+See [Mocking centrals](https://nordicsemi.github.io/IOS-CoreBluetooth-Mock/documentation/corebluetoothmock/mocking-centrals) 
+for details.
+
 ## Documentation
 
-The documentation of the library is available [here](https://nordicsemiconductor.github.io/IOS-CoreBluetooth-Mock/documentation/corebluetoothmock).
+The documentation of the library is available [here](https://nordicsemi.github.io/IOS-CoreBluetooth-Mock/documentation/corebluetoothmock).
 
 ## Migration from *CoreBluetooth*
 
-Migration example is available [here](https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock-Example).
-See [Pull Request #1](https://github.com/NordicSemiconductor/IOS-CoreBluetooth-Mock-Example/pull/1) for 
-step-by-step guide.
+We have a couple of examples that show migrations from the platform's `CoreBluetooth` import to `CoreBluetoothMock`:
+
+- [nRF Connect Device Manager](https://apps.apple.com/es/app/nrf-connect-device-manager/id1519423539) has migrated to aid in UI-level testing as well as being able to run the app in the Simulator. You can find the appropriate [Pull Request here](https://github.com/nordicsemi/IOS-nRF-Connect-Device-Manager/pull/590).
+- CoreBluetooth-Mock-Example is available [here](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock-Example). There is also a step-by-step guide available via this [Pull Request](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock-Example/pull/1).
 
 > [!Note]
 > The migration example application currently does not use mocks in tests. 
@@ -179,3 +242,11 @@ A simplified proprietary service by Nordic Semiconductor, containing two charact
   - Changing the value of the Toggle switch will turn LED 3 on or off.
   - Pressing Button 1 on the Development Kit will show the button state as Pressed on the app.
   - Releasing Button 1 will show the state as Released on the App.
+
+## Special Thanks
+
+On behalf of Nordic and all the maintainers of this repo, we'd like to [thank all contributors](https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/graphs/contributors) for their contributions.
+
+<a href="https://github.com/nordicsemi/IOS-CoreBluetooth-Mock/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=nordicsemi/IOS-CoreBluetooth-Mock" />
+</a>
