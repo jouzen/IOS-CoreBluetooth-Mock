@@ -48,6 +48,18 @@ public class CBMCentralManagerNative: CBMCentralManager {
         }
         
         func centralManagerDidUpdateState(_ central: CBCentralManager) {
+            // When the state moves below .poweredOff, all CBPeripheral objects
+            // obtained from this central manager become invalid and must be
+            // retrieved or discovered again (CBCentralManagerDelegate docs).
+            // Drop the cached wrappers, so that the invalid instances are not
+            // kept alive and not returned from retrievePeripherals(withIdentifiers:)
+            // or used by connect(_:options:) after the stack has recovered.
+            switch central.state {
+            case .resetting, .unsupported, .unauthorized:
+                manager.peripherals.removeAll()
+            default:
+                break
+            }
             manager.delegate?.centralManagerDidUpdateState(manager)
         }
         
@@ -315,15 +327,35 @@ public class CBMCentralManagerNative: CBMCentralManager {
     }
     
     public override func connect(_ peripheral: CBMPeripheral, options: [String : Any]?) {
-        if let peripheral = peripherals[peripheral.identifier] {
+        if let peripheral = nativePeripheral(for: peripheral) {
             manager.connect(peripheral.peripheral, options: options)
         }
     }
     
     public override func cancelPeripheralConnection(_ peripheral: CBMPeripheral) {
-        if let peripheral = peripherals[peripheral.identifier] {
+        if let peripheral = nativePeripheral(for: peripheral) {
             manager.cancelPeripheralConnection(peripheral.peripheral)
         }
+    }
+    
+    /// Returns the wrapper whose underlying `CBPeripheral` a request for the given
+    /// peripheral is sent to.
+    ///
+    /// A ``CBMPeripheralNative`` is used as is, and becomes the cached wrapper for its
+    /// identifier, so that the central manager callbacks are delivered to it. Any
+    /// other ``CBMPeripheral`` is looked up in the cache by identifier.
+    ///
+    /// Using the given object, rather than the cached one, matters when the two hold
+    /// different `CBPeripheral` instances with the same identifier, which can happen
+    /// after the Bluetooth stack has been reset. Connecting the cached instance would
+    /// establish a link the app does not use, while the requests the app then issues
+    /// on its own instance, the one it has set the delegate on, are never answered.
+    private func nativePeripheral(for peripheral: CBMPeripheral) -> CBMPeripheralNative? {
+        guard let nativePeripheral = peripheral as? CBMPeripheralNative else {
+            return peripherals[peripheral.identifier]
+        }
+        peripherals[nativePeripheral.identifier] = nativePeripheral
+        return nativePeripheral
     }
     
     @available(iOS 7.0, *)
