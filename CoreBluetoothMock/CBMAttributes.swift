@@ -92,6 +92,22 @@ open class CBMService: CBMAttribute {
         self._uuid = uuid
         self.isPrimary = isPrimary
     }
+
+    /// Returns a service of `peripheral`, for central manager implementations
+    /// other than the native one and the mock.
+    ///
+    /// A subclass reports the characteristics it discovers by overriding
+    /// ``characteristics``.
+    /// - Parameters:
+    ///   - uuid: The Bluetooth UUID of the service.
+    ///   - isPrimary: The type of the service (primary or secondary).
+    ///   - peripheral: The peripheral the service belongs to.
+    public init(type uuid: CBMUUID, primary isPrimary: Bool, of peripheral: CBMPeripheral) {
+        self.identifier = UUID()
+        self.peripheral = peripheral
+        self._uuid = uuid
+        self.isPrimary = isPrimary
+    }
     
     init(shallowCopy service: CBMService,
          for peripheral: CBMPeripheral) {
@@ -283,6 +299,24 @@ open class CBMCharacteristic: CBMAttribute {
         self.properties = properties
         self.isNotifying = false
     }
+
+    /// Returns a characteristic of `service`, for central manager
+    /// implementations other than the native one and the mock.
+    ///
+    /// A subclass reports the value, the notification state and the
+    /// descriptors it discovers by overriding ``value``, ``isNotifying`` and
+    /// ``descriptors``.
+    /// - Parameters:
+    ///   - uuid: The Bluetooth UUID of the characteristic.
+    ///   - properties: The properties of the characteristic.
+    ///   - service: The service the characteristic belongs to.
+    public init(type uuid: CBMUUID, properties: CBMCharacteristicProperties, of service: CBMService) {
+        self.identifier = UUID()
+        self.service = service
+        self._uuid = uuid
+        self.properties = properties
+        self.isNotifying = false
+    }
     
     init(shallowCopy characteristic: CBMCharacteristic, in service: CBMService) {
         self.identifier = characteristic.identifier
@@ -408,6 +442,19 @@ open class CBMDescriptor: CBMAttribute {
     init(type uuid: CBMUUID) {
         self.identifier = UUID()
         self.characteristic = uninitializedCharacteristic
+        self._uuid = uuid
+    }
+
+    /// Returns a descriptor of `characteristic`, for central manager
+    /// implementations other than the native one and the mock.
+    ///
+    /// A subclass reports the value it reads by overriding ``value``.
+    /// - Parameters:
+    ///   - uuid: The Bluetooth UUID of the descriptor.
+    ///   - characteristic: The characteristic the descriptor belongs to.
+    public init(type uuid: CBMUUID, of characteristic: CBMCharacteristic) {
+        self.identifier = UUID()
+        self.characteristic = characteristic
         self._uuid = uuid
     }
     
