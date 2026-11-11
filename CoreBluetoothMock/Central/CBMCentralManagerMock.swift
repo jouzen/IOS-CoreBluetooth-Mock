@@ -94,14 +94,23 @@ open class CBMCentralManagerMock: CBMCentralManager {
             managers.compactMap { $0.ref }
         }
         existingManagers.forEach { manager in
-            // ...stop scanning if state changed to any other state
-            // than `.poweredOn`. Also, forget all peripherals.
+            // ...stop scanning and drop all connections if state changed to
+            // any other state than `.poweredOn`.
             if manager.state != .poweredOn {
                 manager.isScanning = false
                 manager.scanFilter = nil
                 manager.scanOptions = nil
-                manager.peripherals.values.forEach { $0.closeManager() }
-                manager.peripherals.removeAll()
+                manager.peripherals.values.forEach {
+                    $0.closeManager()
+                    $0.wasScanned = false
+                }
+                // As on iOS, peripherals stay valid while the manager is powered
+                // off, so the app can connect the same objects once it is powered
+                // on again. Below .poweredOff they become invalid
+                // (CBCentralManagerDelegate docs) and are forgotten.
+                if manager.state != .poweredOff {
+                    manager.peripherals.removeAll()
+                }
             }
             // ...and notify delegate.
             manager.queue.async {
@@ -487,6 +496,13 @@ open class CBMCentralManagerMock: CBMCentralManager {
             return
         }
         CBMCentralManagerMock.peripherals = peripherals
+        // Powered-off managers keep their peripherals, which are bound to the
+        // previous specifications. Forget them, so that the new specifications
+        // are scanned and retrieved instead.
+        let existingManagers = mutex.sync {
+            managers.compactMap { $0.ref }
+        }
+        existingManagers.forEach { $0.peripherals.removeAll() }
     }
     
     /// Simulates turning the Bluetooth adapter on.
