@@ -11,6 +11,7 @@
 		2DBB258568F7E07E0DFA3B4E /* EventHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBB2F5ACA6DCE530B0DDE90 /* EventHelper.swift */; };
 		2DBB2A694C3D00999D8B3E29 /* BlinkyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBB27B357E95965525A70A5 /* BlinkyManager.swift */; };
 		2DBB2D9D87AA009D95C10DEE /* ResetTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBB22CFA82E35CBA3BB326F /* ResetTest.swift */; };
+		0A7E5C1B2D3F4A5B6C7D8E01 /* NativeAttributeTypeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7E5C1B2D3F4A5B6C7D8E02 /* NativeAttributeTypeTest.swift */; };
 		2DBB2F44478EB7F4C0DF3AA4 /* BlinkyManagerEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DBB27ABD18F3DAECC075CF2 /* BlinkyManagerEvents.swift */; };
 		526EA53D240D2F8100BF70B2 /* UITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526EA53C240D2F8100BF70B2 /* UITests.swift */; };
 		7E5A01000000000000000B00 /* CentralBehaviorTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5A00000000000000000A00 /* CentralBehaviorTestCase.swift */; };
@@ -68,6 +69,7 @@
 		08873A44B298DC6D146549C5 /* Pods-nRFBlinky_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-nRFBlinky_Tests.release.xcconfig"; path = "Target Support Files/Pods-nRFBlinky_Tests/Pods-nRFBlinky_Tests.release.xcconfig"; sourceTree = "<group>"; };
 		1D2ABBED0526CCFDE935416B /* Pods_nRFBlinky.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_nRFBlinky.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2DBB22CFA82E35CBA3BB326F /* ResetTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResetTest.swift; sourceTree = "<group>"; };
+		0A7E5C1B2D3F4A5B6C7D8E02 /* NativeAttributeTypeTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NativeAttributeTypeTest.swift; sourceTree = "<group>"; };
 		2DBB27ABD18F3DAECC075CF2 /* BlinkyManagerEvents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BlinkyManagerEvents.swift; sourceTree = "<group>"; };
 		2DBB27B357E95965525A70A5 /* BlinkyManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BlinkyManager.swift; sourceTree = "<group>"; };
 		2DBB2D0A6C475A3BA45D6FAA /* BlinkyPeripheralEvents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BlinkyPeripheralEvents.swift; sourceTree = "<group>"; };
@@ -205,6 +207,7 @@
 				F0A6C9F129A9100200FA75EB /* AdvertisingTest.swift */,
 				F0A6C9F129A9100200FA75EC /* PeripheralManagerTest.swift */,
 				2DBB22CFA82E35CBA3BB326F /* ResetTest.swift */,
+				0A7E5C1B2D3F4A5B6C7D8E02 /* NativeAttributeTypeTest.swift */,
 				52E905CD24DD35A100BB5740 /* FailedConnectionTest.swift */,
 				7E5A00000000000000000A00 /* CentralBehaviorTestCase.swift */,
 				7E5A00010000000000000A01 /* CentralManagerBehaviorTest.swift */,
@@ -660,6 +663,7 @@
 				F0A6C9F229A9100200FA75EC /* PeripheralManagerTest.swift in Sources */,
 				52A128B726CD9AF800DE5F37 /* MultipleInstancesTest.swift in Sources */,
 				2DBB2D9D87AA009D95C10DEE /* ResetTest.swift in Sources */,
+				0A7E5C1B2D3F4A5B6C7D8E01 /* NativeAttributeTypeTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

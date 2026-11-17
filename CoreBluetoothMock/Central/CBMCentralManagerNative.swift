@@ -402,6 +402,23 @@ public class CBMCentralManagerNative: CBMCentralManager {
     }
 }
 
+/// Returns the attribute Core Bluetooth passed to a `CBPeripheralDelegate` callback only if it is an instance
+/// of the class the callback declares.
+///
+/// Core Bluetooth resolves the attribute of a characteristic or descriptor event by its ATT handle. After the
+/// peripheral's GATT database changed, for example when a firmware update inserts a service and the handles move,
+/// iOS 27 has passed a `CBService` to characteristic callbacks. Reading `service` or `characteristic` from that
+/// object raises "unrecognized selector" and terminates the app, so such an event is dropped instead.
+///
+/// The check uses `isKind(of:)`, an Objective-C message, because the Swift compiler treats a cast to the
+/// parameter's declared type as always succeeding.
+func nativeAttribute<T: CBAttribute>(_ attribute: T?, ifKindOf type: T.Type) -> T? {
+    guard let attribute = attribute, attribute.isKind(of: type) else {
+        return nil
+    }
+    return attribute
+}
+
 /// A native implementation of ``CBMPeripheral`` that will proxy all requests to an underlying `CBPeripheral`.
 ///
 /// This implementation will be used when creating peripherals by ``CBMCentralManagerNative``.
@@ -574,7 +591,10 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         /// Returns the wrapper for the native `CBCharacteristic`.
         /// - Parameter characteristic: The native characteristic.
         private func mock(of characteristic: CBCharacteristic?) -> CBMCharacteristicNative? {
-            let service = mock(of: characteristic?.service)
+            guard let characteristic = nativeAttribute(characteristic, ifKindOf: CBCharacteristic.self) else {
+                return nil
+            }
+            let service = mock(of: characteristic.service)
             return (service?._characteristics as? [CBMCharacteristicNative])?
                 .first { $0.characteristic == characteristic }
         }
@@ -582,7 +602,10 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         /// Returns the wrapper for the native `CBDescriptor`.
         /// - Parameter descriptor: The native descriptor.
         private func mock(of descriptor: CBDescriptor?) -> CBMDescriptorNative? {
-            let characteristic = mock(of: descriptor?.characteristic)
+            guard let descriptor = nativeAttribute(descriptor, ifKindOf: CBDescriptor.self) else {
+                return nil
+            }
+            let characteristic = mock(of: descriptor.characteristic)
             return (characteristic?._descriptors as? [CBMDescriptorNative])?
                 .first { $0.descriptor == descriptor }
         }
@@ -605,7 +628,10 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         ///   - action: The action to perform on its mock.
         private func usingMock(of characteristic: CBCharacteristic?,
                                action: @escaping (CBMPeripheral, CBMPeripheralDelegate, CBMCharacteristic) -> ()) {
-            usingMock(of: characteristic?.service) { p, d, s in
+            guard let characteristic = nativeAttribute(characteristic, ifKindOf: CBCharacteristic.self) else {
+                return
+            }
+            usingMock(of: characteristic.service) { p, d, s in
                 if let characteristicMock = self.mock(of: characteristic) {
                     action(p, d, characteristicMock)
                 }
@@ -618,7 +644,10 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         ///   - action: The action to perform on its mock.
         private func usingMock(of descriptor: CBDescriptor?,
                                action: @escaping (CBMPeripheral, CBMPeripheralDelegate, CBMDescriptor) -> ()) {
-            usingMock(of: descriptor?.characteristic) { p, d, c in
+            guard let descriptor = nativeAttribute(descriptor, ifKindOf: CBDescriptor.self) else {
+                return
+            }
+            usingMock(of: descriptor.characteristic) { p, d, c in
                 if let descriptorMock = self.mock(of: descriptor) {
                     action(p, d, descriptorMock)
                 }
