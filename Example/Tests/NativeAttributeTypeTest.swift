@@ -46,11 +46,11 @@ class NativeAttributeTypeTest: XCTestCase {
         // The object Core Bluetooth passed to a characteristic callback on iOS 27 after the GATT handles moved.
         let serviceTypedAsCharacteristic = unsafeBitCast(service, to: CBCharacteristic.self)
 
-        XCTAssertNil(nativeAttribute(serviceTypedAsCharacteristic, ifKindOf: CBCharacteristic.self))
+        XCTAssertNil(nativeAttribute(serviceTypedAsCharacteristic))
     }
 
     func testCharacteristicIsAccepted() {
-        let result = nativeAttribute(characteristic as CBCharacteristic, ifKindOf: CBCharacteristic.self)
+        let result = nativeAttribute(characteristic as CBCharacteristic)
 
         XCTAssertTrue(result === characteristic)
     }
@@ -58,19 +58,96 @@ class NativeAttributeTypeTest: XCTestCase {
     func testCharacteristicPassedAsDescriptorIsRejected() {
         let characteristicTypedAsDescriptor = unsafeBitCast(characteristic, to: CBDescriptor.self)
 
-        XCTAssertNil(nativeAttribute(characteristicTypedAsDescriptor, ifKindOf: CBDescriptor.self))
+        XCTAssertNil(nativeAttribute(characteristicTypedAsDescriptor))
     }
 
     func testDescriptorIsAccepted() {
         let descriptor = CBMutableDescriptor(type: CBUUID(string: CBUUIDCharacteristicUserDescriptionString),
                                              value: "Heart Rate")
 
-        let result = nativeAttribute(descriptor as CBDescriptor, ifKindOf: CBDescriptor.self)
+        let result = nativeAttribute(descriptor as CBDescriptor)
 
         XCTAssertTrue(result === descriptor)
     }
 
     func testMissingAttributeIsRejected() {
-        XCTAssertNil(nativeAttribute(nil as CBCharacteristic?, ifKindOf: CBCharacteristic.self))
+        XCTAssertNil(nativeAttribute(nil as CBCharacteristic?))
+    }
+
+    // MARK: - Attribute arrays
+
+    // Key-value coding stores the mixed array in the attribute's instance variable as is, so reading the property
+    // returns a bridged Swift array whose elements are checked only when read, like the arrays Core Bluetooth
+    // returned in the field. Iterating it directly terminates the test with "NSArray element failed to match the
+    // Swift Array Element type".
+
+    private let otherService = CBMutableService(type: CBUUID(string: "180F"), primary: false)
+    private let descriptor = CBMutableDescriptor(type: CBUUID(string: CBUUIDCharacteristicUserDescriptionString),
+                                                 value: "Heart Rate")
+
+    /// A service whose included services and characteristics each hold one element of another class.
+    private func serviceWithMixedArrays() -> CBMutableService {
+        let service = CBMutableService(type: CBUUID(string: "180D"), primary: true)
+        service.setValue(NSArray(array: [otherService, characteristic]), forKey: "includedServices")
+        service.setValue(NSArray(array: [otherService, characteristic]), forKey: "_characteristics")
+        return service
+    }
+
+    /// A characteristic whose descriptors hold one element of another class.
+    private func characteristicWithMixedDescriptors() -> CBMutableCharacteristic {
+        let characteristic = CBMutableCharacteristic(type: CBUUID(string: "2A38"),
+                                                     properties: [.read],
+                                                     value: nil,
+                                                     permissions: [.readable])
+        characteristic.setValue(NSArray(array: [otherService, descriptor]), forKey: "_descriptors")
+        return characteristic
+    }
+
+    func testCharacteristicInServicesIsDropped() {
+        let result = nativeAttributes(serviceWithMixedArrays().includedServices)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result.first === otherService)
+    }
+
+    func testServiceInCharacteristicsIsDropped() {
+        let result = nativeAttributes(serviceWithMixedArrays().characteristics)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result.first === characteristic)
+    }
+
+    func testServiceInDescriptorsIsDropped() {
+        let result = nativeAttributes(characteristicWithMixedDescriptors().descriptors)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result.first === descriptor)
+    }
+
+    func testMissingArrayIsEmpty() {
+        XCTAssertTrue(nativeAttributes(nil as [CBService]?).isEmpty)
+    }
+
+    // MARK: - Native attribute wrappers
+
+    func testServiceWrapperDropsAttributesOfAnotherClass() {
+        let service = serviceWithMixedArrays()
+
+        let wrapper = CBMServiceNative(service, in: CBMPeripheralPreview(Blinky().spec))
+        wrapper.update(service)
+
+        XCTAssertEqual(wrapper.includedServices?.count, 1)
+        XCTAssertEqual(wrapper.characteristics?.count, 1)
+    }
+
+    func testCharacteristicWrapperDropsDescriptorsOfAnotherClass() {
+        let characteristic = characteristicWithMixedDescriptors()
+        let service = CBMServiceNative(CBMutableService(type: CBUUID(string: "180D"), primary: true),
+                                       in: CBMPeripheralPreview(Blinky().spec))
+
+        let wrapper = CBMCharacteristicNative(characteristic, in: service)
+        wrapper.update(characteristic)
+
+        XCTAssertEqual(wrapper.descriptors?.count, 1)
     }
 }
