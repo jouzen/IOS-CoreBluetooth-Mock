@@ -400,6 +400,19 @@ public class CBMCentralManagerNative: CBMCentralManager {
             }
         }
     }
+
+    /// Stops scanning and releases the `isScanning` KVO observation so that, once the owner drops its
+    /// reference to this manager, it (and the wrapped native `CBCentralManager`) can deallocate.
+    ///
+    /// AccessorySetupKit refuses to present its picker while any `CBCentralManager` is active
+    /// (`ASErrorDomain` 550). The `observe(_:)` registration keeps this instance alive, so the native
+    /// manager is never released on reference drop alone; invalidating it here breaks that. After an
+    /// AccessorySetupKit flow the owner creates a fresh manager rather than reusing this one.
+    public func prepareForAccessorySetup() {
+        stopScan()
+        observation?.invalidate()
+        observation = nil
+    }
 }
 
 /// A native implementation of ``CBMPeripheral`` that will proxy all requests to an underlying `CBPeripheral`.
