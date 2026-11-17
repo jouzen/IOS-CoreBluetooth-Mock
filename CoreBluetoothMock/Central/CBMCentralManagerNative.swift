@@ -402,38 +402,6 @@ public class CBMCentralManagerNative: CBMCentralManager {
     }
 }
 
-/// Returns the attribute Core Bluetooth passed to a `CBPeripheralDelegate` callback only if it is an instance
-/// of the class the callback declares.
-///
-/// Core Bluetooth resolves the attribute of a characteristic or descriptor event by its ATT handle. After the
-/// peripheral's GATT database changed, for example when a firmware update inserts a service and the handles move,
-/// iOS 27 has passed a `CBService` to characteristic callbacks. Reading `service` or `characteristic` from that
-/// object raises "unrecognized selector" and terminates the app, so such an event is dropped instead.
-///
-/// The check uses `isKind(of:)`, an Objective-C message, because the Swift compiler treats a cast to the
-/// parameter's declared type as always succeeding.
-func nativeAttribute<T: CBAttribute>(_ attribute: T?, ifKindOf type: T.Type) -> T? {
-    guard let attribute = attribute, attribute.isKind(of: type) else {
-        return nil
-    }
-    return attribute
-}
-
-/// Returns the elements of an attribute array read from Core Bluetooth that are instances of the array's declared
-/// class.
-///
-/// After a GATT database change Core Bluetooth has returned a `CBCharacteristic` in `CBPeripheral.services` (iOS 26
-/// and 18) and a `CBService` in `CBService.characteristics`. Swift checks the class of each element of a bridged
-/// array when it is read, so iterating such an array terminates the app with "NSArray element failed to match the
-/// Swift Array Element type". Reading it as `NSArray` skips that check, and the elements of another class are
-/// dropped.
-func nativeAttributes<T: CBAttribute>(_ attributes: [T]?, ofKind type: T.Type) -> [T] {
-    guard let array = attributes as NSArray? else {
-        return []
-    }
-    return array.compactMap { $0 as? T }
-}
-
 /// A native implementation of ``CBMPeripheral`` that will proxy all requests to an underlying `CBPeripheral`.
 ///
 /// This implementation will be used when creating peripherals by ``CBMCentralManagerNative``.
@@ -494,8 +462,17 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         @available(iOS 7.0, *)
         func peripheral(_ peripheral: CBPeripheral,
                         didModifyServices invalidatedServices: [CBService]) {
+            let services = nativeAttributes(invalidatedServices)
+            // An element of another class hides which service was invalidated, so invalidate them all and let
+            // the delegate discover the services again, rather than report fewer services than changed.
+            guard services.count == invalidatedServices.count else {
+                let invalidatedServiceMocks = impl.mockServices ?? []
+                impl.mockServices = nil
+                impl.delegate?.peripheral(impl, didModifyServices: invalidatedServiceMocks)
+                return
+            }
             var invalidatedServiceMocks: [CBMService] = []
-            nativeAttributes(invalidatedServices, ofKind: CBService.self).forEach { service in
+            services.forEach { service in
                 if let services = impl.mockServices,
                    let index = services
                     .firstIndex(where: { $0.service == service}) {
@@ -581,7 +558,7 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         /// Updates the local list of services with received ones.
         /// - Parameter services: New list of services.
         private func smartCopy(_ services: [CBService]?) {
-            let services = nativeAttributes(services, ofKind: CBService.self)
+            let services = nativeAttributes(services)
             guard !services.isEmpty else {
                 return
             }
@@ -607,7 +584,7 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         /// Returns the wrapper for the native `CBCharacteristic`.
         /// - Parameter characteristic: The native characteristic.
         private func mock(of characteristic: CBCharacteristic?) -> CBMCharacteristicNative? {
-            guard let characteristic = nativeAttribute(characteristic, ifKindOf: CBCharacteristic.self) else {
+            guard let characteristic = nativeAttribute(characteristic) else {
                 return nil
             }
             let service = mock(of: characteristic.service)
@@ -618,7 +595,7 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         /// Returns the wrapper for the native `CBDescriptor`.
         /// - Parameter descriptor: The native descriptor.
         private func mock(of descriptor: CBDescriptor?) -> CBMDescriptorNative? {
-            guard let descriptor = nativeAttribute(descriptor, ifKindOf: CBDescriptor.self) else {
+            guard let descriptor = nativeAttribute(descriptor) else {
                 return nil
             }
             let characteristic = mock(of: descriptor.characteristic)
@@ -644,7 +621,7 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         ///   - action: The action to perform on its mock.
         private func usingMock(of characteristic: CBCharacteristic?,
                                action: @escaping (CBMPeripheral, CBMPeripheralDelegate, CBMCharacteristic) -> ()) {
-            guard let characteristic = nativeAttribute(characteristic, ifKindOf: CBCharacteristic.self) else {
+            guard let characteristic = nativeAttribute(characteristic) else {
                 return
             }
             usingMock(of: characteristic.service) { p, d, s in
@@ -660,7 +637,7 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         ///   - action: The action to perform on its mock.
         private func usingMock(of descriptor: CBDescriptor?,
                                action: @escaping (CBMPeripheral, CBMPeripheralDelegate, CBMDescriptor) -> ()) {
-            guard let descriptor = nativeAttribute(descriptor, ifKindOf: CBDescriptor.self) else {
+            guard let descriptor = nativeAttribute(descriptor) else {
                 return
             }
             usingMock(of: descriptor.characteristic) { p, d, c in
