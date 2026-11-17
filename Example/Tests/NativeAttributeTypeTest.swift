@@ -73,4 +73,45 @@ class NativeAttributeTypeTest: XCTestCase {
     func testMissingAttributeIsRejected() {
         XCTAssertNil(nativeAttribute(nil as CBCharacteristic?, ifKindOf: CBCharacteristic.self))
     }
+
+    // MARK: - Attribute arrays
+
+    // A forced cast from NSArray to a Swift array of a class type defers the class check of each element to the
+    // moment it is read, which gives the same kind of array Core Bluetooth returned in the field. Iterating it
+    // directly terminates the test with "NSArray element failed to match the Swift Array Element type".
+
+    func testCharacteristicInServicesIsDropped() {
+        let service = CBMutableService(type: CBUUID(string: "180D"), primary: true)
+        let services = NSArray(array: [service, characteristic]) as! [CBService]
+
+        let result = nativeAttributes(services, ofKind: CBService.self)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result.first === service)
+    }
+
+    func testServiceInCharacteristicsIsDropped() {
+        let service = CBMutableService(type: CBUUID(string: "180D"), primary: true)
+        let characteristics = NSArray(array: [service, characteristic]) as! [CBCharacteristic]
+
+        let result = nativeAttributes(characteristics, ofKind: CBCharacteristic.self)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result.first === characteristic)
+    }
+
+    func testCharacteristicInDescriptorsIsDropped() {
+        let descriptor = CBMutableDescriptor(type: CBUUID(string: CBUUIDCharacteristicUserDescriptionString),
+                                             value: "Heart Rate")
+        let descriptors = NSArray(array: [characteristic, descriptor]) as! [CBDescriptor]
+
+        let result = nativeAttributes(descriptors, ofKind: CBDescriptor.self)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result.first === descriptor)
+    }
+
+    func testMissingArrayIsEmpty() {
+        XCTAssertTrue(nativeAttributes(nil as [CBService]?, ofKind: CBService.self).isEmpty)
+    }
 }

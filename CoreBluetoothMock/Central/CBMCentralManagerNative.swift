@@ -419,6 +419,21 @@ func nativeAttribute<T: CBAttribute>(_ attribute: T?, ifKindOf type: T.Type) -> 
     return attribute
 }
 
+/// Returns the elements of an attribute array read from Core Bluetooth that are instances of the array's declared
+/// class.
+///
+/// After a GATT database change Core Bluetooth has returned a `CBCharacteristic` in `CBPeripheral.services` (iOS 26
+/// and 18) and a `CBService` in `CBService.characteristics`. Swift checks the class of each element of a bridged
+/// array when it is read, so iterating such an array terminates the app with "NSArray element failed to match the
+/// Swift Array Element type". Reading it as `NSArray` skips that check, and the elements of another class are
+/// dropped.
+func nativeAttributes<T: CBAttribute>(_ attributes: [T]?, ofKind type: T.Type) -> [T] {
+    guard let array = attributes as NSArray? else {
+        return []
+    }
+    return array.compactMap { $0 as? T }
+}
+
 /// A native implementation of ``CBMPeripheral`` that will proxy all requests to an underlying `CBPeripheral`.
 ///
 /// This implementation will be used when creating peripherals by ``CBMCentralManagerNative``.
@@ -480,7 +495,7 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         func peripheral(_ peripheral: CBPeripheral,
                         didModifyServices invalidatedServices: [CBService]) {
             var invalidatedServiceMocks: [CBMService] = []
-            invalidatedServices.forEach { service in
+            nativeAttributes(invalidatedServices, ofKind: CBService.self).forEach { service in
                 if let services = impl.mockServices,
                    let index = services
                     .firstIndex(where: { $0.service == service}) {
@@ -566,7 +581,8 @@ public class CBMPeripheralNative: CBMPeer, CBMPeripheral {
         /// Updates the local list of services with received ones.
         /// - Parameter services: New list of services.
         private func smartCopy(_ services: [CBService]?) {
-            guard let services = services, !services.isEmpty else {
+            let services = nativeAttributes(services, ofKind: CBService.self)
+            guard !services.isEmpty else {
                 return
             }
             impl.mockServices = impl.mockServices ?? []

@@ -143,8 +143,9 @@ internal class CBMServiceNative: CBMService {
             _characteristics = nativeCharacteristics.map { CBMCharacteristicNative($0, in: self) }
         }
         
-        if let nativeSecondaryServices = service.includedServices {
-            _includedServices = nativeSecondaryServices.map { CBMServiceNative($0, in: peripheral) }
+        if service.includedServices != nil {
+            _includedServices = nativeAttributes(service.includedServices, ofKind: CBService.self)
+                .map { CBMServiceNative($0, in: peripheral) }
         }
     }
     
@@ -153,7 +154,7 @@ internal class CBMServiceNative: CBMService {
     /// The method is called when user discovers new service, characteristic or a descriptor.
     /// The internal wrappers need to reflect the change and add missing attributes.
     func update(_ service: CBService) {
-        for includedService in service.includedServices ?? [] {
+        for includedService in nativeAttributes(service.includedServices, ofKind: CBService.self) {
             if _includedServices == nil { _includedServices = [] }
             if let existing = (_includedServices as? [CBMServiceNative])?.first(where: { $0.service == includedService }) {
                 existing.update(includedService)
@@ -176,15 +177,7 @@ internal class CBMServiceNative: CBMService {
     
     /// There is a case when for some reason one of the item in characteristics array is CBService.
     private func safeCharacteristics(of service: CBService) -> [CBCharacteristic] {
-        let characteristics: [CBCharacteristic]
-
-        if let rawArray = service.characteristics as NSArray? {
-            characteristics = rawArray.compactMap { $0 as? CBCharacteristic }
-        } else {
-            characteristics = []
-        }
-        
-        return characteristics
+        return nativeAttributes(service.characteristics, ofKind: CBCharacteristic.self)
     }
     
     override func isEqual(_ object: Any?) -> Bool {
@@ -344,13 +337,14 @@ internal class CBMCharacteristicNative: CBMCharacteristic {
         self.value = characteristic.value
         self.isNotifying = characteristic.isNotifying
         
-        if let nativeDescriptors = characteristic.descriptors {
-            _descriptors = nativeDescriptors.map { CBMDescriptorNative($0, in: self) }
+        if characteristic.descriptors != nil {
+            _descriptors = nativeAttributes(characteristic.descriptors, ofKind: CBDescriptor.self)
+                .map { CBMDescriptorNative($0, in: self) }
         }
     }
     
     func update(_ characteristic: CBCharacteristic) {
-        for descriptor in characteristic.descriptors ?? [] {
+        for descriptor in nativeAttributes(characteristic.descriptors, ofKind: CBDescriptor.self) {
             if _descriptors == nil { _descriptors = [] }
             if let existing = (_descriptors as? [CBMDescriptorNative])?.first(where: { $0.descriptor == descriptor }) {
                 existing.update(descriptor)
